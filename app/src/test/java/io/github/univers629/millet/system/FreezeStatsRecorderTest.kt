@@ -198,14 +198,20 @@ class FreezeStatsRecorderTest {
         // 单应用写入 25 种不同理由（其中 2 种高频，23 种低频），最终仅返回 Top 5
         for (k in 1..20) {
             nowMs += 1_000L
+            engine.recordFreeze(10100, "warm")
+            nowMs += 11_000L
             engine.recordThaw(10100, "PACKET")
         }
         for (k in 1..10) {
             nowMs += 1_000L
+            engine.recordFreeze(10100, "warm")
+            nowMs += 11_000L
             engine.recordThaw(10100, "Sync Binder4")
         }
         for (k in 1..23) {
             nowMs += 1_000L
+            engine.recordFreeze(10100, "warm")
+            nowMs += 11_000L
             engine.recordThaw(10100, "rare_reason_$k")
         }
         val afterReasons = engine.buildSnapshot(StatsWindow.TODAY)
@@ -486,7 +492,7 @@ class FreezeStatsRecorderTest {
         // 模拟磁盘上残留旧版记录的 90xxx / 99xxx 隔离 UID：恢复时应自动剔除并保留真实应用与系统拦截事件
         storageFile.writeText(
             """
-            v1
+            v2
             S|${nowMs - 60_000L}|${nowMs - 60_000L}|${nowMs - elapsedMs}|$elapsedMs|$nowMs|boot-isolated
             BT|2|0|0|0|0|5000||
             BA|99013||1|900000|0|0|||
@@ -768,7 +774,7 @@ class FreezeStatsRecorderTest {
         assertEquals(3_000L, snapshot.screenOffMillis)
         assertEquals(now - 3_000L, snapshot.recent.first { it.kind == StatsEventKind.FREEZE }.timeMillis)
         assertTrue(engine.saveSync())
-        assertTrue(storage.readText().startsWith("v1"))
+        assertTrue(storage.readText().startsWith("v2"))
     }
 
     @Test

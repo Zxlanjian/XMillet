@@ -477,7 +477,7 @@ object BroadcastAndDozeHooks {
         }.getOrDefault(false)
     }
 
-    private fun readDozeConditions(): ConditionalDozeLifecycle.Conditions {
+    private fun readDozeConditions(screenOnOverride: Boolean? = null, chargingOverride: Boolean? = null): ConditionalDozeLifecycle.Conditions {
         val controller = SystemState.deviceIdleController
         val ctx = SystemState.systemContext
         val interactive = runCatching {
@@ -499,8 +499,8 @@ object BroadcastAndDozeHooks {
             XReflect.getIntField(controller, "mState").takeIf { it in 0..7 }?.let { it == 5 || it == 6 }
         }.getOrNull()
         return ConditionalDozeLifecycle.Conditions(
-            screenOn = combine(interactive, controllerBoolean("mScreenOn")),
-            charging = combine(plugged, controllerBoolean("mCharging")),
+            screenOn = screenOnOverride ?: combine(interactive, controllerBoolean("mScreenOn")),
+            charging = chargingOverride ?: combine(plugged, controllerBoolean("mCharging")),
             enabled = queryDozeEnabled(),
             ready = SystemState.isGreezeReady && controller != null && Thread.holdsLock(controller),
             stopped = hotReloading,
@@ -672,9 +672,9 @@ object BroadcastAndDozeHooks {
         if (!PrefReader.systemPrefs.enableDoze || hotReloading) releaseDeepDozeLocked("config")
     }
 
-    private fun scheduleDeepDoze(handler: Handler) = withDozeLock {
+    private fun scheduleDeepDoze(handler: Handler, screenOnOverride: Boolean? = null, chargingOverride: Boolean? = null) = withDozeLock {
         cancelDeepDozeAlarmLocked()
-        val conditions = readDozeConditions()
+        val conditions = readDozeConditions(screenOnOverride, chargingOverride)
         Logger.alwaysWarn(
             "Doze条件: idle=${conditions.permitsIdle} forcePermit=${conditions.permitsForce} " +
                 "screenOn=${conditions.screenOn} charging=${conditions.charging} enabled=${conditions.enabled} " +
@@ -726,7 +726,7 @@ object BroadcastAndDozeHooks {
             read = ::readDozeConditions,
             enable = {
                 val (code, out) = execIdleShellCommand("enable", "deep")
-                if (code != 0) Logger.info("深度睡眠启用失败 $out")
+                if (code != 0) Logger.alwaysWarn("深度睡眠启用失败 $out")
                 code == 0
             },
             force = {
@@ -830,10 +830,14 @@ object BroadcastAndDozeHooks {
 
     private fun execIdleShellCommand(vararg args: String): Pair<Int, String> {
         val controller = SystemState.deviceIdleController ?: return -1 to "controller is null"
-        val shell = idleShellInstance ?: return -1 to "shell is null"
         val sw = StringWriter()
         val pw = PrintWriter(sw)
         synchronized(idleShellLock) {
+            // 热重载后旧 Shell 实例随旧类加载器失效，这里按需重建，避免 enable/force 静默失败
+            val shell = idleShellInstance ?: run {
+                initIdleShell(controller)
+                idleShellInstance
+            } ?: return -1 to "shell is null"
             return try {
                 XReflect.setObjectField(shell, "mOutPrintWriter", pw)
                 XReflect.setObjectField(shell, "mArgs", arrayOf(*args))
@@ -922,7 +926,8 @@ object BroadcastAndDozeHooks {
                 } else if (prefs.batteryChangeObserve && prefs.logToLocal) {
                     Logger.battery(Logger.Level.WARN, "========[屏幕关闭]========")
                 }
-                scheduleDeepDoze(handler)
+                // SCREEN_OFF 广播比 PowerManager 状态更新更早到达，这里显式按熄屏计算条件
+                scheduleDeepDoze(handler, screenOnOverride = false)
             }
 
             Intent.ACTION_SCREEN_ON -> {
@@ -963,8 +968,8 @@ object BroadcastAndDozeHooks {
             }
 
             Intent.ACTION_POWER_DISCONNECTED -> {
-                // 熄屏状态下拔掉电源后条件重新成立，重新调度进入 Doze
-                scheduleDeepDoze(handler)
+                // 熄屏状态下拔掉电源后条件重新成立；断电广播先于充电状态刷新，显式按未充电计算
+                scheduleDeepDoze(handler, chargingOverride = false)
             }
         }
     }

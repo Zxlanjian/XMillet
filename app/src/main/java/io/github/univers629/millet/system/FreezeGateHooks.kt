@@ -1,6 +1,5 @@
 package io.github.univers629.millet.system
 
-import android.app.ActivityManager
 import android.content.Context
 import io.github.univers629.millet.core.ActiveImeTracker
 import io.github.univers629.millet.core.AppUidUtils
@@ -42,6 +41,9 @@ object FreezeGateHooks {
     private const val CLASS_AUROGON_MODE = "com.miui.server.greeze.AurogonImmobulusMode"
     private const val CLASS_AUROGON_APP_INFO = "com.miui.server.greeze.AurogonAppInfo"
     private const val CLASS_RUNNING_PROCESS = "com.miui.server.greeze.RunningProcess"
+
+    /** 统计边界深度超过该时长未更新，视为上次调用未配对退出，归零自愈。 */
+    private const val STATS_DEPTH_STALE_NS = 200_000_000L
 
     private fun isSyncBinderThawReason(reason: String): Boolean =
         FreezeReasonClassifier.isSyncBinderThawReason(reason)
@@ -264,14 +266,29 @@ object FreezeGateHooks {
         val uids: Set<Int>, val origin: StatsEventOrigin)
     private val statsInvocations = java.util.Collections.synchronizedMap(
         java.util.WeakHashMap<UnifiedHookParam, StatsInvocation>())
-    private fun hasEnclosingStatsBoundary(param: UnifiedHookParam, freeze: Boolean): Boolean {
-        val methods = if (freeze) setOf("freezeUids", "freezeAction", "freezePids")
-            else setOf("thawUids", "thawUid", "dispatchThawEvent")
-        val frames = Thread.currentThread().stackTrace.filter {
-            it.className == CLASS_GREEZE_SERVICE && it.methodName in methods
-        }
-        val current = param.method?.name
-        return frames.any { it.methodName != current } || frames.count { it.methodName == current } > 1
+    /**
+     * 当前线程上已进入的统计边界深度。
+     *
+     * 用计数器替代 `Thread.currentThread().stackTrace`：后者在持有 Greeze 锁的冻结/解冻热路径上
+     * 每次都要捕获整条栈，代价远高于一次计数。深度超过 [STATS_DEPTH_STALE_NS] 未更新时视为
+     * 之前某次调用没有配对退出（例如 before 里 blockSafely 或原方法抛异常），归零自愈。
+     */
+    private val statsDepth = ThreadLocal.withInitial { longArrayOf(0L, 0L, 0L) }
+
+    private fun enterStatsDepth(): Boolean {
+        val slot = statsDepth.get()
+        val now = System.nanoTime()
+        // slot[0]=深度，slot[2]=最外层进入时刻。深度长时间不收尾说明上次调用没配对退出。
+        if (slot[0] != 0L && now - slot[2] > STATS_DEPTH_STALE_NS) slot[0] = 0L
+        val outer = slot[0] == 0L
+        if (outer) slot[2] = now
+        slot[0]++
+        return outer
+    }
+
+    private fun leaveStatsDepth() {
+        val slot = statsDepth.get()
+        if (slot[0] > 0L) slot[0]--
     }
 
     private fun beginStats(param: UnifiedHookParam, uids: Collection<Int>, reason: String, freeze: Boolean) {
@@ -281,7 +298,7 @@ object FreezeGateHooks {
         synchronized(statsInvocations) {
             if (statsInvocations.containsKey(param)) return
             if (statsInvocations.size >= 256) statsInvocations.keys.firstOrNull()?.let { statsInvocations.remove(it) }
-            val outer = !hasEnclosingStatsBoundary(param, freeze)
+            val outer = enterStatsDepth()
             call = StatsInvocation(freeze, outer, targets, FreezeStatsRecorder.currentOrigin(reason))
             statsInvocations[param] = call
         }
@@ -289,6 +306,7 @@ object FreezeGateHooks {
 
     private fun finishStats(param: UnifiedHookParam, acceptedUids: Collection<Int>, reason: String): Boolean {
         val call = statsInvocations.remove(param) ?: return false
+        leaveStatsDepth()
         if (!call.outer) return false
         if (FreezeStatsRecorder.isModuleBatchActive()) return param.throwable == null && !param.isSkipped
         return param.throwable == null && !param.isSkipped
@@ -345,7 +363,7 @@ object FreezeGateHooks {
             }
             if (!blocked) return@HookSpec
             if (kept.isEmpty()) {
-                param.blockSafely()
+                if (param.blockSafely()) finishStats(param, emptyList(), reason)
             } else {
                 param.args[0] = kept.toIntArray()
             }
@@ -479,7 +497,7 @@ object FreezeGateHooks {
                 }
                 FreezeExemption.NONE -> Unit
             }
-            beginStats(param, listOf(uid), reason, freeze = true)
+            if (!param.isSkipped) beginStats(param, listOf(uid), reason, freeze = true)
         },
         after = { param ->
             if (!SystemState.isGreezeReady) return@HookSpec
@@ -669,7 +687,10 @@ object FreezeGateHooks {
             val prefs = PrefReader.systemPrefs
             if (SystemState.isGreezeReady && isToFrontReason(reason)) SystemState.lastToFrontPackage = pkg
             val rule = thawInterceptRule(uid, pkg, reason, prefs) ?: return@HookSpec
-            if (param.blockSafely()) recordThawIntercept(uid, pkg, reason, rule, prefs)
+            if (param.blockSafely()) {
+                recordThawIntercept(uid, pkg, reason, rule, prefs)
+                finishStats(param, emptyList(), reason)
+            }
         },
         after = { param ->
             if ((param.method as? java.lang.reflect.Method)?.returnType != Boolean::class.javaPrimitiveType) return@HookSpec
@@ -710,6 +731,7 @@ object FreezeGateHooks {
             for ((uid, rule) in blocked) {
                 recordThawIntercept(uid, SystemState.getPackageNameForUid(uid), reason, rule, prefs)
             }
+            if (param.isSkipped) finishStats(param, emptyList(), reason)
         },
         after = { param ->
             if ((param.method as? java.lang.reflect.Method)?.returnType != List::class.java) return@HookSpec
@@ -892,13 +914,11 @@ object FreezeGateHooks {
     }
 
     private fun resolveProcessNameByPid(pid: Int): String? {
-        val ctx = SystemState.systemContext ?: return null
-        return try {
-            val am = ctx.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager ?: return null
-            am.runningAppProcesses?.firstOrNull { it.pid == pid }?.processName
-        } catch (_: Throwable) {
-            null
-        }
+        ForegroundState.processNameOf(pid)?.let { return it }
+        // 快照未就绪时直接读 procfs，避免为拿进程名去等待 AMS 锁。
+        return runCatching {
+            java.io.File("/proc/$pid/cmdline").readText().substringBefore('\u0000').takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
     /**

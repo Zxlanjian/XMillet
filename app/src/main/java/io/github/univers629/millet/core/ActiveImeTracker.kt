@@ -7,6 +7,8 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -38,6 +40,16 @@ object ActiveImeTracker {
     private val observerRegistered = AtomicBoolean(false)
     private val observerLock = Any()
 
+    /** 设置读取与观察者注册一律转到后台，避免钩子线程在持有平台锁时做跨进程调用。 */
+    private val refreshExecutor: ExecutorService by lazy {
+        Executors.newSingleThreadExecutor { task ->
+            Thread(task, "XMillet-SettingsRefresh").apply { isDaemon = true }
+        }
+    }
+
+    private val mainRefreshInFlight = AtomicBoolean(false)
+    private val userRefreshInFlight = java.util.concurrent.ConcurrentHashMap.newKeySet<Int>()
+
     @Volatile
     private var hotReloading = false
 
@@ -54,6 +66,8 @@ object ActiveImeTracker {
             cachedImePackage = null
             cachedAccessibilityPackages = emptySet()
             userServices.clear()
+            userRefreshInFlight.clear()
+            mainRefreshInFlight.set(false)
             lastRefreshUptimeMs = 0L
             unregisterObserverLocked()
         }
@@ -92,19 +106,13 @@ object ActiveImeTracker {
 
     fun resolveDefaultImePackage(context: Context?): String? {
         val ctx = context ?: return cachedImePackage
-        ensureObserver(ctx)
-        if (!isCacheFresh()) {
-            refresh(ctx)
-        }
+        if (!isCacheFresh()) requestBackgroundRefresh(ctx)
         return cachedImePackage
     }
 
     fun resolveAccessibilityPackages(context: Context?): Set<String> {
         val ctx = context ?: return cachedAccessibilityPackages
-        ensureObserver(ctx)
-        if (!isCacheFresh()) {
-            refresh(ctx)
-        }
+        if (!isCacheFresh()) requestBackgroundRefresh(ctx)
         return cachedAccessibilityPackages
     }
 
@@ -154,9 +162,42 @@ object ActiveImeTracker {
 
     private fun resolveUserServices(context: Context?, userId: Int): UserServices? {
         val ctx = context ?: return null
-        ensureObserver(ctx)
         val now = SystemClock.uptimeMillis()
         userServices[userId]?.takeIf { now - it.refreshedAt in 0..REFRESH_FALLBACK_INTERVAL_MS }?.let { return it }
+        requestBackgroundUserRefresh(ctx, userId)
+        return null
+    }
+
+    /** 未命中缓存时在后台读取设置并注册观察者；失败返回 null，调用方按「未知」保守处理。 */
+    private fun requestBackgroundRefresh(context: Context) {
+        if (!mainRefreshInFlight.compareAndSet(false, true)) return
+        refreshExecutor.execute {
+            try {
+                ensureObserver(context)
+                if (!isCacheFresh()) refresh(context)
+            } catch (_: Throwable) {
+            } finally {
+                mainRefreshInFlight.set(false)
+            }
+        }
+    }
+
+    private fun requestBackgroundUserRefresh(context: Context, userId: Int) {
+        if (!userRefreshInFlight.add(userId)) return
+        refreshExecutor.execute {
+            try {
+                ensureObserver(context)
+                refreshUserServices(context, userId)
+            } catch (_: Throwable) {
+            } finally {
+                userRefreshInFlight.remove(userId)
+            }
+        }
+    }
+
+    private fun refreshUserServices(context: Context, userId: Int): UserServices? {
+        val now = SystemClock.uptimeMillis()
+        val ctx = context
         val token = Binder.clearCallingIdentity()
         return try {
             // ROMs without per-user Secure access cannot provide an independent safety role.

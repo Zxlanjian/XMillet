@@ -279,5 +279,7 @@ class FreezeStatsCodecTest {
         assertEquals(3, decoded.boot!!.apps[0].rawReasons["Sync Binder4|x"])
         assertNull(FreezeStatsCodec.decodeStorage("v99\n"))
         assertNull(FreezeStatsCodec.decodeStorage("v1\nBT|1|0|0|0|0|0||\n"))
+        assertEquals("v2", FreezeStatsCodec.STORAGE_VERSION)
+        assertEquals("v2", encoded.lineSequence().first())
     }
 }

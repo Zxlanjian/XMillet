@@ -182,6 +182,8 @@ object SystemHooks {
         runCatching { ActiveImeTracker.onHotReloading() }
         runCatching { BroadcastAndDozeHooks.onHotReloading() }
         runCatching { SystemBinderService.onHotReloading() }
+        runCatching { ForegroundState.stop() }
+        runCatching { io.github.univers629.millet.core.UidPackageCache.clear() }
         PrefReader.onSystemGroupReloaded = null
     }
 

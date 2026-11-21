@@ -2,6 +2,7 @@ package io.github.univers629.millet.system
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import io.github.univers629.millet.core.UidPackageCache
 import io.github.univers629.millet.core.ActiveImeTracker
 import io.github.univers629.millet.core.AppUidUtils
 import io.github.univers629.millet.core.XReflect
@@ -57,31 +58,14 @@ object SystemState {
     /**
      * 判断包名当前是否处于系统前台或用户可见状态（如分屏/小窗/顶层 Activity）。
      *
-     * 优先匹配 [lastToFrontPackage]；若未曾触发过 toFront 解冻（例如此前未冻结或冷启动未记入），
-     * 兜底通过 `ActivityManagerService#getPackageImportance` 实时查询，避免亮屏保持冻结误伤当前前台应用。
+     * 先匹配 [lastToFrontPackage]；否则读 [ForegroundState] 的异步快照。快照缺失时按「可能在前台」
+     * 放行，避免钩子线程为了判定去等待平台锁（曾因此在 WMS 锁内等 AMS 锁，触发 watchdog 重启）。
      */
     fun isPackageCurrentlyForeground(packageName: String?): Boolean {
         if (packageName.isNullOrEmpty()) return false
         if (lastToFrontPackage == packageName) return true
-        val token = android.os.Binder.clearCallingIdentity()
-        return try {
-            val maxVisibleImportance = android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
-            val ams = amsInstance
-            if (ams != null) {
-                val importance = XReflect.callMethod(ams, "getPackageImportance", packageName) as? Int
-                importance != null && importance in 1..maxVisibleImportance
-            } else {
-                val am = systemContext?.getSystemService(android.app.ActivityManager::class.java)
-                am?.runningAppProcesses?.any { proc ->
-                    proc.importance in 1..maxVisibleImportance &&
-                        proc.pkgList?.any { it == packageName } == true
-                } == true
-            }
-        } catch (_: Throwable) {
-            false
-        } finally {
-            android.os.Binder.restoreCallingIdentity(token)
-        }
+        // 快照不可用时按「可能在前台」放行：钩子线程不能为了判定去等待平台锁。
+        return ForegroundState.isForeground(packageName) ?: true
     }
 
     /** S2 构造器直接传入的系统 Context 备份 */
@@ -258,12 +242,8 @@ object SystemState {
             if (uidPackages.size != 1 || uidPackages[0] != packageName) return false
             val dualUid = AppUidUtils.dualUidOf(uid)
             if (dualUid > 0 && ctx.packageManager.getPackagesForUid(dualUid)?.contains(packageName) == true) return false
-            val am = ctx.getSystemService(android.app.ActivityManager::class.java) ?: return false
-            val processes = am.runningAppProcesses ?: return false
-            processes.none { proc ->
-                (proc.uid == uid || proc.pkgList?.contains(packageName) == true) &&
-                    proc.importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
-            }
+            // 快照不可用时不收紧（按「可能可见」处理），避免在钩子线程里等待 AMS 锁。
+            ForegroundState.isForeground(packageName) == false
         } catch (_: Throwable) {
             false
         } finally {
@@ -398,13 +378,10 @@ object SystemState {
      */
     fun getPackageNameForUid(uid: Int): String? {
         if (uid <= 0) return null
-        val ctx = systemContext ?: return null
-        return try {
-            val pkgs = ctx.packageManager.getPackagesForUid(uid)
-            pkgs?.firstOrNull()
-        } catch (_: Throwable) {
-            null
-        }
+        // 钩子线程可能持有平台锁，这里只读缓存；未命中时投递后台解析（见 UidPackageCache）。
+        UidPackageCache.lookup(uid)?.let { return it }
+        UidPackageCache.requestResolve(uid, systemContext)
+        return null
     }
 
     /** 统计仅归属到完整 UID 的唯一包名；共享 UID、查询失败或未知归属返回 null。 */
@@ -734,6 +711,7 @@ object SystemState {
             )
             syncDualAppSupportToAurogon(io.github.univers629.millet.core.PrefReader.systemPrefs.freezeDualApp)
         }
+        ForegroundState.start(systemContext)
         return true
     }
 

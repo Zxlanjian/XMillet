@@ -156,7 +156,7 @@ fun generateHookDiagnostics(
             }
         }
         val fwSuggestion = when {
-            !frameworkState.supportsRemotePrefs -> "当前 Xposed 框架未开启 PROP_CAP_REMOTE，无法下发 RemotePreferences 设置"
+            !frameworkState.supportsRemotePrefs -> "更新 LSPosed 到支持 RemotePreferences 的版本后点「重新检测」"
             missingScopes.isNotEmpty() -> "作用域缺少 ${missingScopes.joinToString("、")}，可点击下方「授权作用域」"
             staleTargets.isNotEmpty() -> "检测到 ${staleTargets.size} 个目标进程仍运行旧代代码，可点击下方「热重载」无需重启更新"
             else -> null
@@ -201,17 +201,25 @@ fun generateHookDiagnostics(
             detailText = when (sysLevel) {
                 HookDiagnosticLevel.PASSED -> "SystemBinderService 在线，Greeze 实例与关键 Hook 注册结果已上报；本项不证明冻结成功。"
                 HookDiagnosticLevel.WARNING -> "SystemBinderService 已建立通信通道，但 Greeze 实例或关键 Hook 注册结果未确认。Binder 在线不等同于冻结链路可用。"
-                HookDiagnosticLevel.FAILED -> if (frameworkState.isServiceConnected && !frameworkState.hasSystemScope) {
-                    "XposedService 报告作用域尚未勾选「system（系统框架）」。请先授权作用域并重启系统。"
-                } else {
-                    "无法连接至 system_server。请检查 LSPosed 中是否已勾选 XMillet 的「系统框架 (system)」作用域并重启系统。"
+                HookDiagnosticLevel.FAILED -> when {
+                    frameworkState.isServiceConnected && !frameworkState.hasSystemScope ->
+                        "XposedService 报告作用域尚未勾选「system（系统框架）」。点击下方「授权作用域」勾选即可；系统框架只在下次重启时注入，这一步由 LSPosed 决定，模块侧没有额外操作。"
+                    !frameworkState.isServiceConnected ->
+                        "未能连接 XposedService：确认 LSPosed 已启用、模块未被停用且未处于安全模式。启用后 system_server 会在下次启动时注入。"
+                    else ->
+                        "作用域已包含系统框架，但 system_server 尚未完成注入。点下方「热重载」可立即重装钩子（无需重启）；若仍失败，查看 /data/system/XMillet/log 中的注入错误。"
                 }
             },
             suggestion = if (sysLevel == HookDiagnosticLevel.FAILED) {
-                if (frameworkState.isServiceConnected && !frameworkState.hasSystemScope) {
-                    "可点击下方「授权作用域」后重启系统"
-                } else {
-                    "请在 LSPosed 作用域中确认勾选「系统框架」"
+                when {
+                    frameworkState.isServiceConnected && !frameworkState.hasSystemScope ->
+                        "点下方「授权作用域」，勾选后由 LSPosed 在下次重启时完成注入"
+                    !frameworkState.isServiceConnected ->
+                        "确认 LSPosed 与模块均处于启用状态"
+                    frameworkState.staleTargets.isNotEmpty() ->
+                        "点下方「热重载」重装 system_server 钩子，无需重启"
+                    else ->
+                        "查 /data/system/XMillet/log 中「Hook 安装结果」一行定位失败点位"
                 }
             } else null
         )
@@ -280,7 +288,7 @@ fun generateHookDiagnostics(
             },
             suggestion = when (pkLevel) {
                 HookDiagnosticLevel.WARNING -> if (runtimeStatus.powerKeeperConnected) {
-                    "核对两侧安装账本与关键 Hook 注册结果，不能仅凭握手判断冻结可用"
+                    "点「重新检测」；仍为未确认时用「热重载」重装两侧钩子（无需重启），或亮灭屏一次等待双向回调重建"
                 } else if (frameworkState.isServiceConnected && !frameworkState.hasPowerKeeperScope) {
                     "可点击下方「授权作用域」"
                 } else {
@@ -311,7 +319,7 @@ fun generateHookDiagnostics(
             detailText = if (greezeLevel == HookDiagnosticLevel.PASSED)
                 "GreezeManagerService 实例已捕获，关键 Hook 注册结果已上报；句柄存在不能证明驱动冻结成功，也不说明具体内核机制。"
             else
-                "GreezeManagerService 实例或关键 Hook 注册结果尚未确认。请核对本机安装账本；不依据第三方内核名称或 ROM 属性判定冻结能力。"
+                "GreezeManagerService 实例或关键 Hook 注册结果尚未确认。先点「重新检测」；仍为未确认时用「热重载」重装 system_server 钩子（无需重启）。不依据第三方内核名称或 ROM 属性判定冻结能力。"
         )
     )
 
@@ -355,7 +363,9 @@ fun generateHookDiagnostics(
             detailText = if (dozeLevel == HookDiagnosticLevel.PASSED)
                 "DeviceIdleController 实例已捕获；本项不证明状态迁移或名单同步行为已验证，也不能替代冻结证据。"
             else
-                "DeviceIdleController 待捕获。"
+                "DeviceIdleController 待捕获。",
+            suggestion = if (dozeLevel == HookDiagnosticLevel.PASSED) null
+                else "点「重新检测」；仍待捕获时用「热重载」重装 system_server 钩子，无需重启"
         )
     )
 
@@ -380,7 +390,13 @@ fun generateHookDiagnostics(
                 "确认路径要求 Millet 与 PowerMillet 启用且所需 monitors 完整注册；不要求传统 Greeze 开关同时开启。" +
                 "只有传统 Greeze 开关开启不能证明官方后台策略已运行，未核实的替代路径保持未确认。" +
                 "缺字段、类型不符、旧端未上报或读取失败均不能通过；模块 Hook 安装、服务实例存在或启动加速能够冻结不能替代本项。" +
-                "monitor 注册是用户空间运行状态，不宣称内核握手成功或后续调度必然生效；真实冻结能力仍须另项确认。"
+                "monitor 注册是用户空间运行状态，不宣称内核握手成功或后续调度必然生效；真实冻结能力仍须另项确认。",
+
+            suggestion = when (milletBackendState) {
+                "DISABLED" -> "在系统设置的省电与电池里开启官方省电策略后点「重新检测」"
+                "MONITORS_UNREADY" -> "点「重新检测」；仍不齐备时结束「电量与性能」进程，让系统重新注册 monitors"
+                else -> null
+            }
         )
     )
 
@@ -417,7 +433,7 @@ fun generateHookDiagnostics(
                         "无关联样本、读取权限受限、采样未覆盖与旧模块缺少证据字段均保持未确认；不相关 AOSP 缓存应用冻结或内核线程不能替代关联证据；" +
                         "目录、控制文件存在及 cgroup.freeze=1 请求值不算冻结成功，也不能判定内核必然不支持。"
             },
-            suggestion = if (confirmedKernelFreezer) null else "核对模块报告与已有进程快照；不通过主动冻结真实应用检测"
+            suggestion = if (confirmedKernelFreezer) null else "保持后台省电策略运行，出现官方记账中的下一次冻结后点「重新检测」；本项只读现有记账，不做主动冻结，也不必为此重启"
         )
     )
 
@@ -467,7 +483,7 @@ private fun buildCoverageEntry(
             summaryText = "未上报",
             detailText = "当前连接的模块尚未回传安装点账本（该字段随模块升级加入）。" +
                 "这里保持未知而不是显示 0，避免把「查不到」误报成「一个都没装上」。",
-            suggestion = "更新模块并重启系统后重新检测"
+            suggestion = "更新模块后点「重新检测」；目标进程仍在跑旧代代码时点「热重载」，无需重启"
         )
     }
 

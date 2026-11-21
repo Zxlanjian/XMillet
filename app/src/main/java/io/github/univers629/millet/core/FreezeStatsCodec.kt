@@ -31,6 +31,12 @@ object FreezeStatsCodec {
 
     const val VERSION = "v1"
 
+    /**
+     * 磁盘持久化协议版本。1.2.1 及更早版本的冻结/唤醒口径与当前实现不同（存在重复计数），
+     * v2 起旧文件会被整体视为无效并重新开始，避免把旧口径的历史带进新版本。
+     */
+    const val STORAGE_VERSION = "v2"
+
     private const val MIN_META_FIELDS = 16
     private const val MIN_BUCKET_FIELDS = 4
     private const val MIN_APP_FIELDS = 11
@@ -208,7 +214,7 @@ object FreezeStatsCodec {
 
     fun encodeStorage(state: PersistedStatsState): String {
         val sb = StringBuilder(8192)
-        sb.append(VERSION).append('\n')
+        sb.append(STORAGE_VERSION).append('\n')
         sb.append("S|")
             .append(state.baselineSinceMillis).append('|')
             .append(state.bootSinceMillis).append('|')
@@ -302,7 +308,7 @@ object FreezeStatsCodec {
                 break
             }
         }
-        if (header != VERSION) return null
+        if (header != STORAGE_VERSION) return null
 
         var storageMeta: StorageMeta? = null
         var bootTotal: BootTotalParts? = null

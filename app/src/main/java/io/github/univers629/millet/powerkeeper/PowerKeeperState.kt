@@ -2,6 +2,7 @@ package io.github.univers629.millet.powerkeeper
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
+import io.github.univers629.millet.core.UidPackageCache
 import io.github.univers629.millet.core.ActiveImeTracker
 import io.github.univers629.millet.core.AppUidUtils
 import io.github.univers629.millet.core.XReflect
@@ -140,12 +141,9 @@ object PowerKeeperState {
             if (uidPackages.size != 1 || uidPackages[0] != packageName) return false
             val dualUid = AppUidUtils.dualUidOf(uid)
             if (dualUid > 0 && ctx.packageManager.getPackagesForUid(dualUid)?.contains(packageName) == true) return false
-            val am = ctx.getSystemService(android.app.ActivityManager::class.java) ?: return false
-            val processes = am.runningAppProcesses ?: return false
-            processes.none { proc ->
-                (proc.uid == uid || proc.pkgList?.contains(packageName) == true) &&
-                    proc.importance <= android.app.ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE
-            }
+            // 钩子线程可能持有平台锁，前台可见性只读异步快照；未知时保守保留原生豁免。
+            val visible = io.github.univers629.millet.system.ForegroundState.isUidVisible(uid) ?: return false
+            !visible
         } catch (_: Throwable) {
             false
         } finally {
@@ -408,12 +406,10 @@ object PowerKeeperState {
 
     fun getPackageNameForUid(uid: Int): String? {
         if (uid <= 0) return null
-        val ctx = applicationContext ?: return null
-        return try {
-            ctx.packageManager.getPackagesForUid(uid)?.firstOrNull()
-        } catch (_: Throwable) {
-            null
-        }
+        // 钩子线程可能持有平台锁，只读缓存；未命中时后台解析。
+        UidPackageCache.lookup(uid)?.let { return it }
+        UidPackageCache.requestResolve(uid, applicationContext)
+        return null
     }
 
     fun syncDualAppSupport(enabled: Boolean) {
