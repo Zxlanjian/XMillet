@@ -286,15 +286,25 @@ fun XMilletMiuixTheme(
 
         val view = LocalView.current
         val activity = context as? ComponentActivity
-        val hostOwner = LocalNavigationEventDispatcherOwner.current
-            ?: remember(view) { view.findViewTreeNavigationEventDispatcherOwner() }
-        val navOwner = hostOwner ?: remember(activity) {
-            val dispatcher = NavigationEventDispatcher()
-            object : NavigationEventDispatcherOwner {
-                override val navigationEventDispatcher: NavigationEventDispatcher = dispatcher
+        // 只在首次组合时决定返回事件分发器的归属，并在 activity/view 不变期间保持稳定。
+        // 旧实现每次重组都重新读取 LocalNavigationEventDispatcherOwner：首次组合后自建分发器会被
+        // 挂到 decorView 上，下一次重组（例如切换外观开关）就会把它误判为「宿主已提供」，
+        // 进而移除 OnBackInvoked 输入并清空 ViewTree 归属，导致返回手势直接退到桌面；
+        // 再切一次开关又会新建分发器恢复功能，表现为返回首页随开关状态时好时坏。
+        val (navOwner, ownsDispatcher) = remember(activity, view) {
+            val existing = (activity as? NavigationEventDispatcherOwner)
+                ?: view.findViewTreeNavigationEventDispatcherOwner()
+            if (existing != null) {
+                existing to false
+            } else {
+                val dispatcher = NavigationEventDispatcher()
+                val owner: NavigationEventDispatcherOwner = object : NavigationEventDispatcherOwner {
+                    override val navigationEventDispatcher: NavigationEventDispatcher = dispatcher
+                }
+                owner to true
             }
         }
-        if (hostOwner == null) {
+        if (ownsDispatcher) {
             DisposableEffect(navOwner, activity, view) {
                 val targetView = activity?.window?.decorView ?: view
                 if (targetView.findViewTreeNavigationEventDispatcherOwner() == null) {
