@@ -18,13 +18,16 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
+      # Use the runner's preinstalled Android SDK (android-actions/setup-android fails installing the deprecated 'tools' package)
       - name: Install SDK platform 37
         run: |
-          yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-37" || true
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          [ -x "$SDKM" ] || SDKM=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | tail -1)
+          echo "sdkmanager=$SDKM"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" "platforms;android-37" "platform-tools" || echo "::warning::sdkmanager could not install platforms;android-37"
+          ls "$ANDROID_HOME/platforms" || true
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
