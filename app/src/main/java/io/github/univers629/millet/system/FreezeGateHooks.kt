@@ -261,7 +261,7 @@ object FreezeGateHooks {
 
     private fun recordThawIntercept(uid: Int, pkg: String?, reason: String, rule: InterceptRule, prefs: PrefsSnapshot) {
         if (prefs.freezeStats) FreezeStatsRecorder.recordIntercept(uid, rule, reason, pkg)
-        Logger.warn("--系统[解冻uid]:${rule.label},拒绝[$reason]解冻[$pkg]uid:$uid")
+        if (prefs.isLog) Logger.warn("--系统[解冻uid]:${rule.label},拒绝[$reason]解冻[$pkg]uid:$uid")
     }
 
     private data class StatsInvocation(val freeze: Boolean, val outer: Boolean,
@@ -369,7 +369,7 @@ object FreezeGateHooks {
                     ) {
                         FreezeStatsRecorder.recordProtect(uid, reason, pkg)
                     }
-                    Logger.info("freezeUids 跳过受保护应用[$exemption]: $pkg uid=$uid reason=$reason")
+                    if (prefs.isLog) Logger.info("freezeUids 跳过受保护应用[$exemption]: $pkg uid=$uid reason=$reason")
                 } else {
                     kept.add(uid)
                 }
@@ -487,16 +487,16 @@ object FreezeGateHooks {
                     if (prefs.freezeStats && uid >= 10000) {
                         FreezeStatsRecorder.recordProtect(uid, reason, pkg)
                     }
-                    Logger.info("FAH判断:${pkg}在白名单，因此无法被冻结")
+                    if (prefs.isLog) Logger.info("FAH判断:${pkg}在白名单，因此无法被冻结")
                     Logger.logEvent(Logger.Level.INFO, "FAH判断白名单阻断冻结", pkg, uid, reason)
                     param.blockSafely()
                 }
                 FreezeExemption.DEFAULT_IME -> {
-                    Logger.info("FAH判断:${pkg}为当前默认输入法，免予冻结")
+                    if (prefs.isLog) Logger.info("FAH判断:${pkg}为当前默认输入法，免予冻结")
                     param.blockSafely()
                 }
                 FreezeExemption.ACCESSIBILITY_SERVICE -> {
-                    Logger.info("FAH判断:${pkg}为已启用无障碍服务，免予冻结")
+                    if (prefs.isLog) Logger.info("FAH判断:${pkg}为已启用无障碍服务，免予冻结")
                     param.blockSafely()
                 }
                 FreezeExemption.UNKNOWN_SERVICE_ROLES -> param.blockSafely()
@@ -504,7 +504,7 @@ object FreezeGateHooks {
                     if (prefs.freezeStats && uid >= 10000) {
                         FreezeStatsRecorder.recordProtect(uid, reason, pkg)
                     }
-                    Logger.info("FAH判断:${pkg}具有前台服务,禁止冻结")
+                    if (prefs.isLog) Logger.info("FAH判断:${pkg}具有前台服务,禁止冻结")
                     Logger.logEvent(Logger.Level.INFO, "FAH判断具有前台服务阻断冻结", pkg, uid, reason)
                     param.blockSafely()
                 }
@@ -827,7 +827,7 @@ object FreezeGateHooks {
                             FreezeStatsRecorder.recordProtect(uid, reason, pkg)
                         }
                     }
-                    Logger.info("freezePids 跳过受保护应用进程[$exemption]: $pkg pid=$pid")
+                    if (prefs.isLog) Logger.info("freezePids 跳过受保护应用进程[$exemption]: $pkg pid=$pid")
                 } else {
                     kept.add(pid)
                 }
@@ -1079,7 +1079,7 @@ object FreezeGateHooks {
                 FreezeStatsRecorder.recordSystemIntercept(rule, reason)
             }
             val label = if (chargeThaw) "禁止插电解冻" else "禁止亮屏解冻"
-            Logger.warn("--系统[解冻uid]:$label(thawAll),拒绝[$reason]全量解冻")
+            if (prefs.isLog) Logger.warn("--系统[解冻uid]:$label(thawAll),拒绝[$reason]全量解冻")
             thawProtectedUidsAsync(reason, prefs)
         }
     )
