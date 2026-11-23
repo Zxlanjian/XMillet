@@ -42,6 +42,7 @@ object FreezeGateHooks {
     private const val CLASS_AUROGON_APP_INFO = "com.miui.server.greeze.AurogonAppInfo"
     private const val CLASS_RUNNING_PROCESS = "com.miui.server.greeze.RunningProcess"
     private const val CLASS_LIST_APPS_MANAGER = "com.miui.server.greeze.power.ListAppsManager"
+    private const val CLASS_POLICY_MAKER = "com.miui.server.greeze.power.PolicyMaker"
 
     /** 统计边界深度超过该时长未更新，视为上次调用未配对退出，归零自愈。 */
     private const val STATS_DEPTH_STALE_NS = 200_000_000L
@@ -571,15 +572,8 @@ object FreezeGateHooks {
     )
 
     private fun resolveAurogonAppUid(appInfoObj: Any): Int {
-        val clazz = appInfoObj.javaClass
-        val fieldUid = when {
-            RomCapabilities.hasField(clazz, "mUid") ->
-                runCatching { XReflect.getIntField(appInfoObj, "mUid") }.getOrDefault(-1)
-            RomCapabilities.hasField(clazz, "uid") ->
-                runCatching { XReflect.getIntField(appInfoObj, "uid") }.getOrDefault(-1)
-            else -> -1
-        }
-        return fieldUid
+        // 字段存在性已由 XReflect 正/负缓存，热路径不再触发异常构造。
+        return XReflect.getIntFieldOr(appInfoObj, "mUid", "uid")
     }
 
     /**
@@ -607,16 +601,8 @@ object FreezeGateHooks {
             val runningProc = param.args.getOrNull(0) ?: return@HookSpec
             val reason = (param.args.getOrNull(3) as? String) ?: "unknown"
 
-            val uid = try {
-                XReflect.getIntField(runningProc, "uid")
-            } catch (_: Throwable) {
-                -1
-            }
-            val pid = try {
-                XReflect.getIntField(runningProc, "pid")
-            } catch (_: Throwable) {
-                -1
-            }
+            val uid = XReflect.getIntFieldOr(runningProc, "uid")
+            val pid = XReflect.getIntFieldOr(runningProc, "pid")
             val processName = try {
                 XReflect.getObjectField(runningProc, "processName") as? String
             } catch (_: Throwable) {
@@ -1248,6 +1234,63 @@ object FreezeGateHooks {
             val self = param.thisObject ?: return@HookSpec
             SystemState.addDualAppToAurogonTargetList(self, uid)
             param.result = null
+        }
+    )
+
+    /**
+     * S33（OS4 / Android 17，PowerKeeper 4.2+）：PolicyMaker#isAllowFreeze(int): int
+     * 新版 PowerKeeper 已移除 FrozenAppController（P23 因此 unsupported），冻结资格判定下沉到
+     * system_server 的 `com.miui.server.greeze.power.PolicyMaker`，返回 FREEZE_ABLE 才允许冻结。
+     * AFTER 阶段把白名单 / 默认输入法 / 无障碍等受保护应用的结果改为 CANNOT_FREEZE。
+     * 旧系统不存在该类时由安装器标记为 unsupported，不影响原有路径。
+     */
+    @Volatile
+    private var policyCannotFreeze: Int? = null
+
+    @Volatile
+    private var policyFreezeAble: Int? = null
+
+    private fun resolvePolicyConst(clazz: Class<*>, name: String): Int? {
+        val field = XReflect.findFieldOrNull(clazz, name) ?: return null
+        return try {
+            field.getInt(null)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    fun buildS33PolicyMakerAllowFreezeHook(): HookSpec = HookSpec(
+        id = "S33_POLICY_ALLOW_FREEZE",
+        name = "PolicyMaker#isAllowFreeze",
+        targetClass = CLASS_POLICY_MAKER,
+        methodName = "isAllowFreeze",
+        paramTypes = listOf(Int::class.javaPrimitiveType!!),
+        mode = HookMode.AFTER,
+        after = { param ->
+            if (!SystemState.isGreezeReady) return@HookSpec
+            if (param.throwable != null) return@HookSpec
+            val uid = param.args.getOrNull(0) as? Int ?: return@HookSpec
+            if (!AppUidUtils.isManagedAppUid(uid)) return@HookSpec
+            val declaring = (param.method as? java.lang.reflect.Method)?.declaringClass ?: return@HookSpec
+            val freezeAble = policyFreezeAble
+                ?: resolvePolicyConst(declaring, "FREEZE_ABLE")?.also { policyFreezeAble = it }
+                ?: return@HookSpec
+            if ((param.result as? Int) != freezeAble) return@HookSpec
+            val cannotFreeze = policyCannotFreeze
+                ?: resolvePolicyConst(declaring, "CANNOT_FREEZE")?.also { policyCannotFreeze = it }
+                ?: return@HookSpec
+            // 只读缓存；未命中时 UidPackageCache 会后台解析，下次判定即生效（不在平台锁内查 PMS）
+            val pkg = SystemState.getPackageNameForUid(uid) ?: return@HookSpec
+            val prefs = PrefReader.systemPrefs
+            val exemption = evaluateFreezeExemption(uid, pkg, prefs, checkFgs = false)
+            if (exemption == FreezeExemption.NONE || exemption == FreezeExemption.FOREGROUND_SERVICE) return@HookSpec
+            param.result = cannotFreeze
+            if (exemption == FreezeExemption.WHITE_LIST && prefs.freezeStats) {
+                FreezeStatsRecorder.recordProtect(uid, "isAllowFreeze", pkg)
+            }
+            if (prefs.isLog) {
+                Logger.warn("系统侧阻止冻结受保护应用 $pkg (UID=$uid, $exemption)")
+            }
         }
     )
 

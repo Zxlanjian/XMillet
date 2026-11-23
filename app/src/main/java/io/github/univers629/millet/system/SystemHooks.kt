@@ -128,6 +128,7 @@ object SystemHooks {
         FreezeGateHooks.buildS30NotifyExecuteServicesHook(classLoader),
         FreezeGateHooks.buildS31AurogonUpdateTargetListHook(classLoader),
         FreezeGateHooks.buildS32CloudFrozenWhiteListHook(),
+        FreezeGateHooks.buildS33PolicyMakerAllowFreezeHook(),
         BroadcastAndDozeHooks.buildS9BroadcastSkipPolicyHook(),
         BroadcastAndDozeHooks.buildS10BroadcastQueueDeliverHook(),
         FreezeGateHooks.buildS24AllowBroadcastHook(),

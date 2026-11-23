@@ -89,15 +89,7 @@ object AnrAndProcessHooks {
             if (PrefReader.systemPrefs.simplifyLog && !(extracted?.isSystemApp ?: SystemState.isSystemAppUid(appUid))) {
                 val targetRecord = expectingRecord ?: removed?.processRecord
                 val pid = if (targetRecord != null) {
-                    try {
-                        XReflect.getIntField(targetRecord, "mPid")
-                    } catch (_: Throwable) {
-                        try {
-                            XReflect.getIntField(targetRecord, "pid")
-                        } catch (_: Throwable) {
-                            -1
-                        }
-                    }
+                    XReflect.getIntFieldOr(targetRecord, "mPid", "pid")
                 } else {
                     -1
                 }

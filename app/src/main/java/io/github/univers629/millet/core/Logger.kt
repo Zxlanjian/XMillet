@@ -78,11 +78,18 @@ object Logger {
      */
     fun onHotReloading() {
         val thread: HandlerThread?
+        val handler: Handler?
         synchronized(ioLock) {
             hotReloading = true
+            handler = ioHandler
             ioHandler = null
             thread = ioThread
             ioThread = null
+        }
+        // 退出前把缓冲区落盘并关闭文件句柄（quitSafely 会先执行完已入队任务）
+        try {
+            handler?.post { closeLocalWriter() }
+        } catch (_: Throwable) {
         }
         thread?.quitSafely()
     }
@@ -169,6 +176,8 @@ object Logger {
      */
     fun initSystemLogRotation() {
         postIoTask {
+            closeLocalWriter()
+            localWrittenBytes = 0L
             try {
                 val dir = File(LOCAL_LOG_DIR)
                 if (!dir.exists()) {
@@ -273,27 +282,88 @@ object Logger {
             }
         }
 
-        // 2. 如需写入本地文件，统一投递到单线程 IO Handler
-        if (prefs.isLog || prefs.logToLocal || prefs.logType == "file" || forceLocal) {
+        // 2. 如需写入本地文件，统一投递到单线程 IO Handler。
+        //    仅由 logToLocal / logType=file / forceLocal 决定，isLog 只控制 LSPosed 输出，避免同一条日志双写。
+        //    时间戳在事件发生时（Hook 线程）采集，避免 IO 队列积压导致时间漂移。
+        if (prefs.logToLocal || prefs.logType == "file" || forceLocal) {
+            val eventTimeMs = System.currentTimeMillis()
             postIoTask {
-                appendLineToLocalFile(level, body)
+                appendLineToLocalFile(eventTimeMs, level, body)
             }
         }
     }
 
-    private fun appendLineToLocalFile(level: Level, body: String) {
+    // ===== 以下状态仅在 XMillet-LogIo 单线程内访问，无需加锁 =====
+    private const val MAX_LOCAL_LOG_BYTES = 2L * 1024 * 1024
+    private const val FLUSH_DELAY_MS = 1500L
+    private var localWriter: java.io.BufferedWriter? = null
+    private var localWrittenBytes = 0L
+    private var flushScheduled = false
+    private val localTimeFormat by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA) }
+    private val reusableDate = Date()
+
+    private val flushRunnable = Runnable {
+        flushScheduled = false
         try {
+            localWriter?.flush()
+        } catch (_: Throwable) {
+            closeLocalWriter()
+        }
+    }
+
+    private fun openLocalWriter(): java.io.BufferedWriter? {
+        localWriter?.let { return it }
+        return try {
             val dir = File(LOCAL_LOG_DIR)
-            if (!dir.exists()) {
-                dir.mkdirs()
-            }
+            if (!dir.exists()) dir.mkdirs()
             val file = File(LOCAL_LOG_PATH)
-            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.CHINA).format(Date())
-            FileWriter(file, true).use { writer ->
-                writer.append("$timestamp [${level.code}] $body\n")
+            localWrittenBytes = if (file.exists()) file.length() else 0L
+            java.io.BufferedWriter(FileWriter(file, true), 8 * 1024).also { localWriter = it }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun closeLocalWriter() {
+        try {
+            localWriter?.flush()
+            localWriter?.close()
+        } catch (_: Throwable) {
+        }
+        localWriter = null
+    }
+
+    /** 超过上限时轮转为 last.log，防止长时间开机后日志无限增长。 */
+    private fun rotateLocalLogIfNeeded() {
+        if (localWrittenBytes < MAX_LOCAL_LOG_BYTES) return
+        closeLocalWriter()
+        try {
+            val lastFile = File(LOCAL_LAST_LOG_PATH)
+            if (lastFile.exists()) lastFile.delete()
+            File(LOCAL_LOG_PATH).renameTo(lastFile)
+        } catch (_: Throwable) {
+        }
+        localWrittenBytes = 0L
+    }
+
+    private fun appendLineToLocalFile(eventTimeMs: Long, level: Level, body: String) {
+        try {
+            rotateLocalLogIfNeeded()
+            val writer = openLocalWriter() ?: return
+            reusableDate.time = eventTimeMs
+            val line = "${localTimeFormat.format(reusableDate)} [${level.code}] $body\n"
+            writer.write(line)
+            // 近似字节数（中文按 3 字节估算），仅用于触发轮转
+            localWrittenBytes += line.length * 3L
+            if (level == Level.ERROR) {
+                writer.flush()
+            } else if (!flushScheduled) {
+                flushScheduled = true
+                ioHandler?.postDelayed(flushRunnable, FLUSH_DELAY_MS)
             }
         } catch (_: Throwable) {
             // 本地文件写入失败静默降级，不抛异常
+            closeLocalWriter()
         }
     }
 }

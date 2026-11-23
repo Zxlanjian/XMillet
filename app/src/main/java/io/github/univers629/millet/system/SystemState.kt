@@ -433,33 +433,50 @@ object SystemState {
      */
     fun formatAppLabelOnly(uid: Int): String {
         if (uid == 99000) return "Android System WebView"
-        val ctx = systemContext ?: return "uid:$uid"
-        return try {
+        return resolveAppLabelCached(uid) ?: "uid:$uid"
+    }
+
+    /** uid -> (应用名, 写入时间)。墓碑日志每次冻结/解冻都会对整张冻结表取名，避免反复查询 PMS。 */
+    private val appLabelCache = ConcurrentHashMap<Int, Pair<String, Long>>()
+
+    /** 缓存有效期：应用改名/更新后最多 10 分钟内刷新，无需监听包变更广播。 */
+    private const val APP_LABEL_CACHE_TTL_MS = 10 * 60 * 1000L
+    private const val APP_LABEL_CACHE_MAX = 512
+
+    private fun resolveAppLabelCached(uid: Int): String? {
+        val now = android.os.SystemClock.uptimeMillis()
+        appLabelCache[uid]?.let { (label, ts) ->
+            if (now - ts < APP_LABEL_CACHE_TTL_MS) return label
+        }
+        val ctx = systemContext ?: return null
+        val token = android.os.Binder.clearCallingIdentity()
+        val label = try {
             val pm = ctx.packageManager
-            val pkg = pm.getPackagesForUid(uid)?.firstOrNull() ?: return "uid:$uid"
+            val pkg = pm.getPackagesForUid(uid)?.firstOrNull() ?: return null
             @Suppress("DEPRECATION")
             val appInfo = pm.getApplicationInfo(pkg, 0)
             pm.getApplicationLabel(appInfo).toString()
         } catch (_: Throwable) {
-            "uid:$uid"
+            return null
+        } finally {
+            android.os.Binder.restoreCallingIdentity(token)
         }
+        if (appLabelCache.size >= APP_LABEL_CACHE_MAX) appLabelCache.clear()
+        appLabelCache[uid] = label to now
+        return label
+    }
+
+    /** 供包变更场景主动失效（可选调用）。 */
+    fun invalidateAppLabel(uid: Int) {
+        appLabelCache.remove(uid)
     }
 
     /**
      * 格式化 `应用名@uid`（用于 S6 freezeUids 日志）。
      */
     fun formatAppLabelAndUid(uid: Int): String {
-        val ctx = systemContext ?: return "uid@$uid"
-        return try {
-            val pm = ctx.packageManager
-            val pkg = pm.getPackagesForUid(uid)?.firstOrNull() ?: return "uid@$uid"
-            @Suppress("DEPRECATION")
-            val appInfo = pm.getApplicationInfo(pkg, 0)
-            val label = pm.getApplicationLabel(appInfo).toString()
-            "$label@$uid"
-        } catch (_: Throwable) {
-            "uid@$uid"
-        }
+        val label = resolveAppLabelCached(uid) ?: return "uid@$uid"
+        return "$label@$uid"
     }
 
     /**
@@ -512,16 +529,8 @@ object SystemState {
                 ?: return null
             val pkgName = appInfo.packageName ?: return null
             val appUid = appInfo.uid
-            val runningUid = try {
-                XReflect.getIntField(processRecord, "uid")
-            } catch (_: Throwable) {
-                appUid
-            }
-            val userId = try {
-                XReflect.getIntField(processRecord, "userId")
-            } catch (_: Throwable) {
-                0
-            }
+            val runningUid = XReflect.getIntFieldOr(processRecord, "uid", default = appUid)
+            val userId = XReflect.getIntFieldOr(processRecord, "userId", default = 0)
             val procName = (XReflect.getObjectField(processRecord, "processName") as? String)
                 ?: pkgName
             val isSys = pkgName == "android" ||
@@ -636,14 +645,16 @@ object SystemState {
             pidFreezeLock.unlock()
         }
 
-        if (emitThawTombstone) {
-            Logger.alwaysWarn(
-                "墓碑日志(T):由于[$effectiveReason],解冻应用[${formatAppLabelOnly(uid)}],冻结列表:${getFrozenAppNames()}"
-            )
-        } else if (emitFreezeTombstone) {
-            Logger.alwaysWarn(
-                "墓碑日志(F):由于[$effectiveReason],冻结应用[${formatAppLabelOnly(uid)}],冻结列表:${getFrozenAppNames()}"
-            )
+        if (emitThawTombstone || emitFreezeTombstone) {
+            // 完整冻结列表仅在详细日志(isLog)下输出；默认只输出数量，避免每次冻结/解冻遍历整张冻结表取应用名。
+            val frozenSummary = if (PrefReader.systemPrefs.isLog) {
+                "冻结列表:${getFrozenAppNames()}"
+            } else {
+                "冻结数:${getFrozenUidsArray().size}"
+            }
+            val tag = if (emitThawTombstone) "墓碑日志(T)" else "墓碑日志(F)"
+            val action = if (emitThawTombstone) "解冻应用" else "冻结应用"
+            Logger.alwaysWarn("$tag:由于[$effectiveReason],$action[${formatAppLabelOnly(uid)}],$frozenSummary")
         }
         return record
     }

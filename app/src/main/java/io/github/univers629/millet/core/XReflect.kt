@@ -62,6 +62,42 @@ object XReflect {
         }
     }
 
+    /** 负缓存：记录确认不存在的字段，避免热路径上反复遍历继承链并构造 NoSuchFieldException。 */
+    private val missingFieldCache: MutableSet<String> = ConcurrentHashMap.newKeySet()
+
+    /**
+     * 沿继承树查找 Field，不存在时返回 null（结果正负均缓存，不抛异常）。
+     */
+    fun findFieldOrNull(clazz: Class<*>, fieldName: String): Field? {
+        val cacheKey = "${clazz.name}#$fieldName"
+        fieldCache[cacheKey]?.let { return it }
+        if (missingFieldCache.contains(cacheKey)) return null
+        return try {
+            findField(clazz, fieldName)
+        } catch (_: NoSuchFieldException) {
+            missingFieldCache.add(cacheKey)
+            null
+        }
+    }
+
+    /**
+     * 依次尝试多个候选字段名读取整型字段；对象为 null、字段均不存在或读取失败时返回 [default]。
+     * 用于替代热路径上的 `runCatching { getIntField(o, "mUid") }` + 回退写法。
+     */
+    fun getIntFieldOr(obj: Any?, vararg fieldNames: String, default: Int = -1): Int {
+        if (obj == null) return default
+        val clazz = obj.javaClass
+        for (name in fieldNames) {
+            val field = findFieldOrNull(clazz, name) ?: continue
+            return try {
+                field.getInt(obj)
+            } catch (_: Throwable) {
+                default
+            }
+        }
+        return default
+    }
+
     /**
      * 读取对象实例字段。
      */
