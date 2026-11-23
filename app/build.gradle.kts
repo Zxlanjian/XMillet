@@ -24,8 +24,28 @@ android {
         buildConfig = true
     }
 
+    // 发布签名：CI 通过环境变量提供 PKCS12 密钥库（来自仓库 Secrets），本地无密钥时 release 产物保持未签名
+    val releaseKeystorePath = System.getenv("RELEASE_KEYSTORE_PATH")
+    val hasReleaseKeystore = !releaseKeystorePath.isNullOrBlank() && file(releaseKeystorePath).exists()
+    signingConfigs {
+        create("release") {
+            if (hasReleaseKeystore) {
+                storeFile = file(releaseKeystorePath!!)
+                storeType = "PKCS12"
+                storePassword = System.getenv("RELEASE_STORE_PASSWORD")
+                keyAlias = System.getenv("RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("RELEASE_STORE_PASSWORD")
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
