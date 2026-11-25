@@ -125,11 +125,13 @@ fun ProgressiveDialogLayout(
                     )
                 }
                 .layerBackdrop(bodyBackdrop)
-                .verticalScroll(scrollState)
+                // 先把标题栏/底栏的高度让出来，再进入滚动：滚动视口不会伸到两栏下面，
+                // 最后一行滚到底时停在底栏上方，不会被底栏的模糊层盖住。
                 .padding(
                     top = with(density) { headerHeight.toDp() },
                     bottom = with(density) { footerHeight.toDp() },
-                ),
+                )
+                .verticalScroll(scrollState),
             content = content,
         )
         if (title != null) {
