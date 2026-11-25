@@ -1,6 +1,7 @@
 package io.github.univers629.millet.ui.screen.tombstats
 
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.basic.InputField
 import kotlinx.coroutines.delay
 import androidx.compose.animation.core.VisibilityThreshold
@@ -106,7 +107,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
-import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Filter
 import top.yukonga.miuix.kmp.icon.glass.QuietMode
@@ -1240,8 +1240,7 @@ internal fun MethodologyDialog(
     show: Boolean,
     onDismiss: () -> Unit,
 ) {
-    GlassDialog(
-        backdrop = PopupBackdropHolder.current,
+    OverlayDialog(
         show = show,
         onDismissRequest = onDismiss,
     ) {

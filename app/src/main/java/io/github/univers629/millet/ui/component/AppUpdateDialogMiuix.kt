@@ -1,6 +1,6 @@
 package io.github.univers629.millet.ui.component
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
-import top.yukonga.miuix.kmp.glass.GlassDialog
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
 
@@ -88,7 +88,7 @@ fun AppUpdateDialogMiuix(
         else -> "下载并安装"
     }
 
-    GlassDialog(backdrop = PopupBackdropHolder.current, 
+    OverlayDialog(
         show = show,
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
         onDismissRequest = onDismiss,

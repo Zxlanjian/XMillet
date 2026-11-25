@@ -1,6 +1,6 @@
 package io.github.univers629.millet.ui.screen
 import io.github.univers629.millet.ui.util.GlassOverlayListPopup
-import top.yukonga.miuix.kmp.glass.GlassDialog
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import io.github.univers629.millet.ui.util.MilletTopAppBar

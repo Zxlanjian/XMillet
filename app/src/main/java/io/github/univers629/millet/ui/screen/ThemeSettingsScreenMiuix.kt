@@ -1,4 +1,5 @@
 package io.github.univers629.millet.ui.screen
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.BarIconButton
@@ -87,6 +88,13 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.ListView
+import top.yukonga.miuix.kmp.icon.glass.HomeButton
+import top.yukonga.miuix.kmp.icon.glass.Hd
+import top.yukonga.miuix.kmp.icon.glass.CinematicEffect
+import top.yukonga.miuix.kmp.icon.glass.ChevronBackward
+import top.yukonga.miuix.kmp.icon.glass.BottomSplitScreenOutline
+import top.yukonga.miuix.kmp.icon.glass.Album
 import top.yukonga.miuix.kmp.icon.glass.Tune
 import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
 import top.yukonga.miuix.kmp.icon.glass.GesturePassword
@@ -99,7 +107,6 @@ import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
-import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -203,7 +210,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.HomeOutline,
+                                    imageVector = MiuixIcons.Glass.BottomSplitScreenOutline,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -228,8 +235,8 @@ fun ThemeSettingsScreenMiuix(
                                     tint = colorScheme.onBackground
                                 )
                             },
-                            title = "顶栏与底栏背景模糊",
-                            summary = "高斯模糊为整块毛玻璃；渐进式模糊为顶栏 HyperOS 4 风格边缘渐隐（经典底栏保持毛玻璃）",
+                            title = "背景模糊",
+                            summary = "高斯模糊为整块毛玻璃；渐进式模糊为顶栏边缘渐隐；无则仅保留顶栏渐变",
                             items = listOf("关闭", "高斯模糊", "渐进式模糊"),
                             selectedIndex = when {
                                 !themeState.enableBlur -> 0
@@ -251,7 +258,7 @@ fun ThemeSettingsScreenMiuix(
                             SwitchPreference(
                                 startAction = {
                                     Icon(
-                                        imageVector = MiuixIcons.Glass.Wallpaper,
+                                        imageVector = MiuixIcons.Glass.CinematicEffect,
                                         contentDescription = null,
                                         modifier = Modifier
                                         .padding(end = 8.dp)
@@ -286,7 +293,7 @@ fun ThemeSettingsScreenMiuix(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Tune,
+                                    imageVector = MiuixIcons.Glass.ListView,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -339,7 +346,7 @@ fun ThemeSettingsScreenMiuix(
                             SwitchPreference(
                                 startAction = {
                                     Icon(
-                                        imageVector = MiuixIcons.Glass.GesturePassword,
+                                        imageVector = MiuixIcons.Glass.ChevronBackward,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .padding(end = 8.dp)
@@ -391,7 +398,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Theme,
+                                    imageVector = MiuixIcons.Glass.Album,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -415,7 +422,7 @@ fun ThemeSettingsScreenMiuix(
                                     title = "调色板风格 (PaletteStyle)",
                                     startAction = {
                                         Icon(
-                                            imageVector = MiuixIcons.Glass.Wallpaper,
+                                            imageVector = MiuixIcons.Glass.Hd,
                                             contentDescription = null,
                                             modifier = Modifier
                                         .padding(end = 8.dp)
@@ -601,8 +608,7 @@ private fun TombSectionPickerDialog(
     onDismissRequest: () -> Unit,
 ) {
     if (!show) return
-    GlassDialog(
-        backdrop = PopupBackdropHolder.current,
+    OverlayDialog(
         show = true,
         onDismissRequest = onDismissRequest,
         insideMargin = DpSize(0.dp, 0.dp),

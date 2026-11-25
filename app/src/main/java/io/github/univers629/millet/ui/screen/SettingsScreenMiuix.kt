@@ -2,7 +2,6 @@ package io.github.univers629.millet.ui.screen
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
 import io.github.univers629.millet.ui.component.FoldablePreferenceCard
 import io.github.univers629.millet.ui.component.FoldablePreferenceSection
-import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
@@ -91,6 +90,18 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Widget
+import top.yukonga.miuix.kmp.icon.glass.Timer
+import top.yukonga.miuix.kmp.icon.glass.Send
+import top.yukonga.miuix.kmp.icon.glass.Report
+import top.yukonga.miuix.kmp.icon.glass.RecordingTape
+import top.yukonga.miuix.kmp.icon.glass.Prohibit
+import top.yukonga.miuix.kmp.icon.glass.Power
+import top.yukonga.miuix.kmp.icon.glass.MultiSplitScreen
+import top.yukonga.miuix.kmp.icon.glass.LockOutline
+import top.yukonga.miuix.kmp.icon.glass.JumpNext
+import top.yukonga.miuix.kmp.icon.glass.HapticIntensity
+import top.yukonga.miuix.kmp.icon.glass.AccessControl
 import top.yukonga.miuix.kmp.icon.glass.Tune
 import top.yukonga.miuix.kmp.icon.glass.SecurityStatus
 import top.yukonga.miuix.kmp.icon.glass.Battery100
@@ -336,7 +347,7 @@ fun SettingsContent(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Theme,
+                                    imageVector = MiuixIcons.Glass.Widget,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -360,12 +371,12 @@ fun SettingsContent(
                         FoldablePreferenceSection(
                             title = "Millet 墓碑冻结全局策略",
                             summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
-                            icon = MiuixIcons.Glass.DecorationMaintenance,
+                            icon = MiuixIcons.Glass.AccessControl,
                         ) {
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.DecorationMaintenance,
+                                    imageVector = MiuixIcons.Glass.Battery100,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -381,7 +392,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Battery100,
+                                    imageVector = MiuixIcons.Glass.Power,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -413,7 +424,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.SecurityStatus,
+                                    imageVector = MiuixIcons.Glass.Prohibit,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -431,7 +442,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Copy,
+                                    imageVector = MiuixIcons.Glass.MultiSplitScreen,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -453,7 +464,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.QuietMode,
+                                    imageVector = MiuixIcons.Glass.Timer,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -469,7 +480,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.PlaybackSpeed,
+                                    imageVector = MiuixIcons.Glass.JumpNext,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -485,7 +496,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.GesturePassword,
+                                    imageVector = MiuixIcons.Glass.HapticIntensity,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -510,7 +521,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.FeedbackOutline,
+                                    imageVector = MiuixIcons.Glass.Report,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -526,7 +537,7 @@ fun SettingsContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Tune,
+                                    imageVector = MiuixIcons.Glass.RecordingTape,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -545,7 +556,7 @@ fun SettingsContent(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.Share,
+                                    imageVector = MiuixIcons.Glass.Send,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -593,7 +604,7 @@ fun SettingsContent(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Tasks,
+                                    imageVector = MiuixIcons.Glass.LockOutline,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -715,7 +726,7 @@ fun SettingsContent(
 
 @Composable
 private fun LoadingDialogMiuix(show: Boolean) {
-    GlassDialog(backdrop = PopupBackdropHolder.current, 
+    OverlayDialog(
         show = show,
         onDismissRequest = { },
         content = {
@@ -842,7 +853,7 @@ private fun SaveShareActionDialog(
         }
     }
 
-    GlassDialog(backdrop = PopupBackdropHolder.current, 
+    OverlayDialog(
         show = show,
         onDismissRequest = onDismissRequest,
         insideMargin = DpSize(0.dp, 0.dp),
@@ -930,8 +941,7 @@ private fun ConfigActionsDialog(
     onExport: () -> Unit,
     onReset: () -> Unit,
 ) {
-    GlassDialog(
-        backdrop = PopupBackdropHolder.current,
+    OverlayDialog(
         show = show,
         onDismissRequest = onDismissRequest,
         insideMargin = DpSize(0.dp, 0.dp),

@@ -218,6 +218,7 @@ fun FloatingBottomBar(
     backdrop: Backdrop,
     tabsCount: Int,
     isBlurEnabled: Boolean = true,
+    liquidGlass: Boolean = true,
     content: @Composable RowScope.((Int) -> Unit) -> Unit
 ) {
     val isInDark = isInDarkTheme()
@@ -383,10 +384,12 @@ fun FloatingBottomBar(
                                 padding = maxOf(padding, 40.dp.toPx())
                                 vibrancy()
                                 blur(4.dp.toPx(), 4.dp.toPx())
-                                lens(
-                                    refractionHeight = 24.dp.toPx(),
-                                    refractionAmount = 24.dp.toPx(),
-                                )
+                                if (liquidGlass) {
+                                    lens(
+                                        refractionHeight = 24.dp.toPx(),
+                                        refractionAmount = 24.dp.toPx(),
+                                    )
+                                }
                             },
                             layerBlock = {
                                 val width = size.width.coerceAtLeast(1f)
@@ -405,7 +408,7 @@ fun FloatingBottomBar(
                     }
                 )
                 .then(
-                    if (isBlurEnabled) {
+                    if (isBlurEnabled && liquidGlass) {
                         interactiveHighlight.modifier.then(interactiveHighlight.gestureModifier)
                     } else Modifier
                 )
@@ -438,10 +441,12 @@ fun FloatingBottomBar(
                             effects = {
                                 vibrancy()
                                 blur(4.dp.toPx(), 4.dp.toPx())
-                                lens(
-                                    refractionHeight = 24.dp.toPx(),
-                                    refractionAmount = 24.dp.toPx(),
-                                )
+                                if (liquidGlass) {
+                                    lens(
+                                        refractionHeight = 24.dp.toPx(),
+                                        refractionAmount = 24.dp.toPx(),
+                                    )
+                                }
                             },
                             onDrawSurface = { drawRect(containerColor) },
                         )
@@ -469,12 +474,14 @@ fun FloatingBottomBar(
                             shape = { pillShape },
                             effects = {
                                 val progress = dampedDragAnimation.pressProgress
-                                lens(
-                                    refractionHeight = 10.dp.toPx() * progress,
-                                    refractionAmount = 14.dp.toPx() * progress,
-                                    depthEffect = true,
-                                    chromaticAberration = 0.5f,
-                                )
+                                if (liquidGlass) {
+                                    lens(
+                                        refractionHeight = 10.dp.toPx() * progress,
+                                        refractionAmount = 14.dp.toPx() * progress,
+                                        depthEffect = true,
+                                        chromaticAberration = 0.5f,
+                                    )
+                                }
                             },
                             layerBlock = {
                                 scaleX = dampedDragAnimation.scaleX

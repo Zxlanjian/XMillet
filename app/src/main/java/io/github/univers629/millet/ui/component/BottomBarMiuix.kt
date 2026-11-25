@@ -211,7 +211,8 @@ fun BoxScope.BottomBarMiuix(
             onSelected = { mainState.animateToPage(it) },
             backdrop = backdrop,
             tabsCount = items.size,
-            isBlurEnabled = enableFloatingBottomBarBlur
+            isBlurEnabled = enableFloatingBottomBarBlur || enableBlur,
+            liquidGlass = enableFloatingBottomBarBlur,
         ) { activateTab ->
             items.forEachIndexed { index, item ->
                 val destination = destinations[index]

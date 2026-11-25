@@ -1,6 +1,6 @@
 package io.github.univers629.millet.ui.screen
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
-import top.yukonga.miuix.kmp.glass.GlassDialog
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import io.github.univers629.millet.ui.util.MilletTopAppBar
@@ -810,7 +810,7 @@ fun AboutRepoScreenMiuix(
     }
 
     val activeResId = previewDonateResId
-    GlassDialog(backdrop = PopupBackdropHolder.current, 
+    OverlayDialog(
         show = activeResId != null,
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
         onDismissRequest = { previewDonateResId = null },

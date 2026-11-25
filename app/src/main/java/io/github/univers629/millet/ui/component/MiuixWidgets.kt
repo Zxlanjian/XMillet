@@ -1,8 +1,8 @@
 package io.github.univers629.millet.ui.component
+import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.glass.GlassPopupItem
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
-import top.yukonga.miuix.kmp.glass.GlassDialog
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -202,7 +202,7 @@ fun MiuixConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    GlassDialog(backdrop = PopupBackdropHolder.current, 
+    OverlayDialog(
         show = show,
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
         onDismissRequest = onDismiss,

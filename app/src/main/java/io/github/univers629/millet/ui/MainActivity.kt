@@ -468,7 +468,7 @@ class MainActivity : ComponentActivity() {
                                                 else Modifier
                                             )
                                             .then(
-                                                if (enableFloatingBottomBar && enableFloatingBottomBarBlur) {
+                                                if (enableFloatingBottomBar && (enableFloatingBottomBarBlur || enableBlur)) {
                                                     Modifier.layerBackdrop(backdrop)
                                                 } else {
                                                     Modifier
