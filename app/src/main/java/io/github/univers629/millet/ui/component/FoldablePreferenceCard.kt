@@ -47,59 +47,80 @@ fun FoldablePreferenceCard(
     initiallyExpanded: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    var expanded by rememberSaveable(title) { mutableStateOf(initiallyExpanded) }
-    val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
-        label = "foldArrow",
-    )
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
             .padding(bottom = 12.dp),
     ) {
-        BasicComponent(
+        FoldablePreferenceSection(
             title = title,
             summary = summary,
-            startAction = icon?.let {
-                {
-                    Icon(
-                        imageVector = it,
-                        contentDescription = null,
-                        modifier = Modifier.padding(end = 8.dp).size(24.dp),
-                        tint = colorScheme.onBackground,
-                    )
-                }
-            },
-            endActions = {
-                Icon(
-                    imageVector = MiuixIcons.ExpandMore,
-                    contentDescription = if (expanded) "收起" else "展开",
-                    tint = colorScheme.onSurfaceVariantSummary,
-                    modifier = Modifier
-                        .align(Alignment.CenterVertically)
-                        .size(20.dp)
-                        .graphicsLayer { rotationZ = arrowRotation },
-                )
-            },
-            onClick = { expanded = !expanded },
+            icon = icon,
+            initiallyExpanded = initiallyExpanded,
+            content = content,
         )
-        AnimatedVisibility(
-            visible = expanded,
-            enter = expandVertically(
-                animationSpec = spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold),
-                expandFrom = Alignment.Top,
-            ) + fadeIn(spring(stiffness = Spring.StiffnessMediumLow)),
-            exit = shrinkVertically(
-                animationSpec = spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMedium, IntSize.VisibilityThreshold),
-                shrinkTowards = Alignment.Top,
-            ) + fadeOut(spring(stiffness = Spring.StiffnessMedium)),
-        ) {
-            Column {
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                content()
+    }
+}
+
+/**
+ * 卡片内的折叠分组：不自己画 [Card]，供多个分组共用一个卡片使用。
+ * 与 [FoldablePreferenceCard] 的展开逻辑、标题行样式完全一致。
+ */
+@Composable
+fun FoldablePreferenceSection(
+    title: String,
+    summary: String? = null,
+    icon: ImageVector? = null,
+    initiallyExpanded: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var expanded by rememberSaveable(title) { mutableStateOf(initiallyExpanded) }
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+        label = "foldArrow",
+    )
+    BasicComponent(
+        title = title,
+        summary = summary,
+        startAction = icon?.let {
+            {
+                Icon(
+                    imageVector = it,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp).size(24.dp),
+                    tint = colorScheme.onBackground,
+                )
             }
+        },
+        endActions = {
+            Icon(
+                imageVector = MiuixIcons.ExpandMore,
+                contentDescription = if (expanded) "收起" else "展开",
+                tint = colorScheme.onSurfaceVariantSummary,
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .size(20.dp)
+                    .graphicsLayer { rotationZ = arrowRotation },
+            )
+        },
+        onClick = { expanded = !expanded },
+    )
+    AnimatedVisibility(
+        visible = expanded,
+        enter = expandVertically(
+            animationSpec = spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold),
+            expandFrom = Alignment.Top,
+        ) + fadeIn(spring(stiffness = Spring.StiffnessMediumLow)),
+        exit = shrinkVertically(
+            animationSpec = spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMedium, IntSize.VisibilityThreshold),
+            shrinkTowards = Alignment.Top,
+        ) + fadeOut(spring(stiffness = Spring.StiffnessMedium)),
+    ) {
+        Column {
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+            content()
         }
     }
 }

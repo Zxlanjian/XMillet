@@ -101,6 +101,7 @@ dependencies {
     // Miuix KMP UI 组件库、图标、导航、设置项与毛玻璃特效 (0.9.5-beta04)
     implementation("top.yukonga.miuix.kmp:miuix-ui-android:0.9.5-beta04")
     implementation("top.yukonga.miuix.kmp:miuix-icons-android:0.9.5-beta04")
+    implementation("top.yukonga.miuix.kmp:miuix-glass-icons-android:0.9.5-beta04")
     implementation("top.yukonga.miuix.kmp:miuix-nav-android:0.9.5-beta04")
     implementation("top.yukonga.miuix.kmp:miuix-preference-android:0.9.5-beta04")
     implementation("top.yukonga.miuix.kmp:miuix-blur-android:0.9.5-beta04")

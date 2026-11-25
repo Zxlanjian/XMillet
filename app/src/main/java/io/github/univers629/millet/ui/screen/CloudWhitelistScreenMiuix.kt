@@ -47,7 +47,7 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
@@ -232,15 +232,11 @@ private fun CloudWhitelistContent(
         },
         actions = {
             BarIconButton(
+                icon = MiuixIcons.Glass.Refresh,
+                contentDescription = "刷新云端名单",
                 onClick = onRefresh,
-                enabled = !isRefreshing
-            ) {
-                Icon(
-                    imageVector = MiuixIcons.Refresh,
-                    contentDescription = "刷新云端名单",
-                    tint = colorScheme.onSurface
-                )
-            }
+                enabled = !isRefreshing,
+            )
         }
     ) {
         if (effectiveLists == null) {

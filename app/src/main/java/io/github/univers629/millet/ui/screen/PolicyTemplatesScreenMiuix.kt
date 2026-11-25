@@ -118,9 +118,10 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.MoreCircle
+import top.yukonga.miuix.kmp.icon.glass.Add
+import top.yukonga.miuix.kmp.icon.glass.MoreCircle
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -172,10 +173,12 @@ internal fun PolicySubPageScaffold(
                         BarIconButton(onClick = onBack) {
                             val layoutDirection = LocalLayoutDirection.current
                             Icon(
-                                modifier = Modifier.graphicsLayer {
-                                    if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-                                },
-                                imageVector = MiuixIcons.Back,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .graphicsLayer {
+                                        if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                                    },
+                                imageVector = MiuixIcons.Glass.Back,
                                 contentDescription = "返回",
                                 tint = colorScheme.onBackground
                             )
@@ -361,14 +364,10 @@ fun PolicyTemplatesContent(
         onBack = onBack,
         actions = {
             BarIconButton(
-                onClick = { showEditor = true }
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = "新建自定义模板",
-                    tint = colorScheme.onSurface
-                )
-            }
+                icon = MiuixIcons.Glass.Add,
+                contentDescription = "新建自定义模板",
+                onClick = { showEditor = true },
+            )
         }
     ) {
         item(key = "intro") {
@@ -573,15 +572,11 @@ private fun PolicyTemplateDetailContent(
             if (!template.builtIn) {
                 val showTopPopup = remember { mutableStateOf(false) }
                 BarIconButton(
+                    icon = MiuixIcons.Glass.MoreCircle,
+                    contentDescription = "模板操作",
                     onClick = { showTopPopup.value = true },
-                    holdDownState = showTopPopup.value
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.MoreCircle,
-                        tint = colorScheme.onSurface,
-                        contentDescription = "模板操作"
-                    )
-                }
+                    holdDownState = showTopPopup.value,
+                )
                 GlassOverlayListPopup(
                     show = showTopPopup.value,
                     popupPositionProvider = ListPopupDefaults.MenuPositionProvider,

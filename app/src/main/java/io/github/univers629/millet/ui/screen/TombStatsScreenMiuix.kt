@@ -20,7 +20,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,7 +56,6 @@ import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import io.github.univers629.millet.ui.util.resolveStatsDetail
 import io.github.univers629.millet.ui.vm.TombStatsUiState
 import io.github.univers629.millet.ui.vm.TombStatsViewModel
-import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
@@ -66,8 +64,8 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.MoreCircle
-import top.yukonga.miuix.kmp.icon.extended.Refresh
+import top.yukonga.miuix.kmp.icon.glass.MoreCircle
+import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
@@ -135,7 +133,6 @@ fun TombStatsContent(
     onResetStats: () -> Unit,
     onOpenAppProfile: (packageName: String, uid: Int) -> Unit,
 ) {
-    val scope = rememberCoroutineScope()
     val scrollBehavior = MiuixScrollBehavior()
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
@@ -177,25 +174,16 @@ fun TombStatsContent(
                     title = "墓碑统计",
                     actions = {
                         BarIconButton(
-                            modifier = Modifier.padding(end = 4.dp),
+                            icon = MiuixIcons.Glass.Refresh,
+                            contentDescription = "刷新统计",
                             onClick = onManualRefresh,
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Refresh,
-                                contentDescription = "刷新统计",
-                                tint = colorScheme.onSurface,
-                            )
-                        }
+                        )
                         BarIconButton(
+                            icon = MiuixIcons.Glass.MoreCircle,
+                            contentDescription = "更多操作",
                             onClick = { showTopPopup = true },
                             holdDownState = showTopPopup,
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.MoreCircle,
-                                contentDescription = "更多操作",
-                                tint = colorScheme.onSurface,
-                            )
-                        }
+                        )
                         GlassOverlayListPopup(
                             show = showTopPopup,
                             popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
@@ -343,14 +331,6 @@ fun TombStatsContent(
                                     snap = snap,
                                     rankModeIndex = uiState.rankModeIndex,
                                     onRankModeChange = onSelectRankMode,
-                                    onTileRankClick = { idx ->
-                                        onSelectRankMode(idx)
-                                        val rankItemIndex = 5 +
-                                            (if (snap.isSample) 1 else 0) +
-                                            (if (uiState.refreshFailed) 1 else 0) + 2 +
-                                            (if (snap.buckets.isNotEmpty()) 1 else 0)
-                                        scope.launch { listState.animateScrollToItem(rankItemIndex) }
-                                    },
                                     onOpenDetail = { onSelectDetail(it.uid) },
                                 )
                             }

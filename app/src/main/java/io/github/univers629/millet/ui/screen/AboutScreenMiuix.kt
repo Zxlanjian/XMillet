@@ -109,7 +109,7 @@ import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -225,15 +225,10 @@ fun AboutScreenMiuix(
                 defaultWindowInsetsPadding = false,
                 navigationIcon = {
                     BarIconButton(
+                        icon = MiuixIcons.Glass.Back,
+                        contentDescription = "返回",
                         onClick = onBack,
-                        modifier = Modifier.padding(start = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
-                            tint = colorScheme.onSurface
-                        )
-                    }
+                    )
                 },
             )
         },
@@ -615,15 +610,10 @@ fun AboutKnowledgeScreenMiuix(
                 scrollBehavior = topAppBarScrollBehavior,
                 navigationIcon = {
                     BarIconButton(
+                        icon = MiuixIcons.Glass.Back,
+                        contentDescription = "返回",
                         onClick = onBack,
-                        modifier = Modifier.padding(start = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
-                            tint = colorScheme.onSurface
-                        )
-                    }
+                    )
                 },
             )
         },
@@ -711,15 +701,10 @@ fun AboutRepoScreenMiuix(
                 scrollBehavior = topAppBarScrollBehavior,
                 navigationIcon = {
                     BarIconButton(
+                        icon = MiuixIcons.Glass.Back,
+                        contentDescription = "返回",
                         onClick = onBack,
-                        modifier = Modifier.padding(start = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
-                            tint = colorScheme.onSurface
-                        )
-                    }
+                    )
                 },
             )
         },
@@ -975,15 +960,10 @@ fun AboutLicensesScreenMiuix(
                 scrollBehavior = topAppBarScrollBehavior,
                 navigationIcon = {
                     BarIconButton(
+                        icon = MiuixIcons.Glass.Back,
+                        contentDescription = "返回",
                         onClick = onBack,
-                        modifier = Modifier.padding(start = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = MiuixIcons.Back,
-                            contentDescription = "返回",
-                            tint = colorScheme.onSurface
-                        )
-                    }
+                    )
                 },
             )
         },

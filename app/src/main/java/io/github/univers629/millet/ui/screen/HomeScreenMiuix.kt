@@ -103,8 +103,9 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
-import top.yukonga.miuix.kmp.icon.extended.Info
-import top.yukonga.miuix.kmp.icon.extended.MoreCircle
+import top.yukonga.miuix.kmp.icon.extended.Info as ExtendedInfo
+import top.yukonga.miuix.kmp.icon.glass.Info
+import top.yukonga.miuix.kmp.icon.glass.MoreCircle
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -221,27 +222,19 @@ fun HomeScreenMiuix(
                     color = barColor,
                     title = "XMillet",
                     actions = {
+                        val allPass = runtimeStatus.binderAlive && runtimeStatus.powerKeeperConnected
                         BarIconButton(
-                            modifier = Modifier.padding(end = 4.dp),
-                            onClick = { showHookCheckDialog = true }
-                        ) {
-                            val allPass = runtimeStatus.binderAlive && runtimeStatus.powerKeeperConnected
-                            Icon(
-                                imageVector = Icons.Rounded.AcUnit,
-                                contentDescription = "运行环境与服务检测",
-                                tint = if (allPass) colorScheme.primary else Color(0xFFFF9500)
-                            )
-                        }
+                            icon = MiuixIcons.Glass.Info,
+                            contentDescription = "运行环境与服务检测",
+                            tint = if (allPass) colorScheme.primary else Color(0xFFFF9500),
+                            onClick = { showHookCheckDialog = true },
+                        )
                         BarIconButton(
+                            icon = MiuixIcons.Glass.MoreCircle,
+                            contentDescription = "更多操作",
                             onClick = { showTopPopup = true },
-                            holdDownState = showTopPopup
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.MoreCircle,
-                                contentDescription = "更多操作",
-                                tint = colorScheme.onBackground
-                            )
-                        }
+                            holdDownState = showTopPopup,
+                        )
                         GlassOverlayListPopup(
                             show = showTopPopup,
                             popupPositionProvider = ListPopupDefaults.MenuPositionProvider,
@@ -379,7 +372,7 @@ fun HomeScreenMiuix(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Info,
+                                    imageVector = MiuixIcons.ExtendedInfo,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)

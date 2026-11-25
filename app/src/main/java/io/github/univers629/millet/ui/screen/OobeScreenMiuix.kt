@@ -139,7 +139,7 @@ import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
@@ -375,17 +375,10 @@ fun OobeScreenMiuix(
                                 titleColor = colorScheme.onSurface,
                                 navigationIcon = {
                                     BarIconButton(
-                                        onClick = {
-                                            currentStep = OobeStep.Startup
-                                        },
-                                        modifier = Modifier.padding(start = 12.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = MiuixIcons.Back,
-                                            contentDescription = "返回欢迎页",
-                                            tint = colorScheme.onSurface
-                                        )
-                                    }
+                                        icon = MiuixIcons.Glass.Back,
+                                        contentDescription = "返回欢迎页",
+                                        onClick = { currentStep = OobeStep.Startup },
+                                    )
                                 },
                             )
                             }
@@ -692,9 +685,10 @@ private fun OobeStartupContent(
                         .align(Alignment.TopStart)
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Back,
+                        imageVector = MiuixIcons.Glass.Back,
                         contentDescription = "返回",
-                        tint = Color.White
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
                     )
                 }
             }

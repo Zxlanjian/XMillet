@@ -4,6 +4,8 @@ import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.BarIconButton
 
 import android.app.Activity
+import android.content.ComponentName
+import android.content.pm.PackageManager
 import android.app.Application
 import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
@@ -55,6 +57,9 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +77,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.univers629.millet.core.PredictiveBackController
+import io.github.univers629.millet.ui.component.TombStatsIcon
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.UiThemeState
 import io.github.univers629.millet.ui.theme.keyColorOptions
@@ -86,7 +92,8 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.basic.Check
-import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
@@ -110,6 +117,14 @@ fun ThemeSettingsScreenMiuix(
         1 -> false
         2 -> true
         else -> isSystemInDarkTheme()
+    }
+
+    val launcherAlias = remember {
+        ComponentName(context.packageName, "${context.packageName}.ui.MainActivityAlias")
+    }
+    var showLauncherIcon by remember {
+        val componentState = context.packageManager.getComponentEnabledSetting(launcherAlias)
+        mutableStateOf(componentState != PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
     }
 
     val paletteStyles = ThemePaletteStyle.entries
@@ -142,10 +157,12 @@ fun ThemeSettingsScreenMiuix(
                         BarIconButton(onClick = onBack) {
                             val layoutDirection = LocalLayoutDirection.current
                             Icon(
-                                modifier = Modifier.graphicsLayer {
-                                    if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
-                                },
-                                imageVector = MiuixIcons.Back,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .graphicsLayer {
+                                        if (layoutDirection == LayoutDirection.Rtl) scaleX = -1f
+                                    },
+                                imageVector = MiuixIcons.Glass.Back,
                                 contentDescription = "返回",
                                 tint = colorScheme.onBackground
                             )
@@ -242,6 +259,48 @@ fun ThemeSettingsScreenMiuix(
                                 onCheckedChange = { themeState.updateEnableFloatingBottomBarBlur(it) }
                             )
                         }
+
+                        SwitchPreference(
+                            startAction = {
+                                Icon(
+                                    imageVector = TombStatsIcon,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(24.dp),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            title = "墓碑统计",
+                            summary = "在底栏显示墓碑统计页：冻结、唤醒与拦截次数",
+                            checked = themeState.showTombStatsTab,
+                            onCheckedChange = { themeState.updateShowTombStatsTab(it) }
+                        )
+
+                        SwitchPreference(
+                            startAction = {
+                                Icon(
+                                    imageVector = MiuixIcons.Show,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(24.dp),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            title = "显示桌面启动图标",
+                            summary = "关闭后可从 LSPosed 管理器的模块设置中打开 XMillet",
+                            checked = showLauncherIcon,
+                            onCheckedChange = { visible ->
+                                showLauncherIcon = visible
+                                context.packageManager.setComponentEnabledSetting(
+                                    launcherAlias,
+                                    if (visible) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                                    else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                                    PackageManager.DONT_KILL_APP
+                                )
+                            }
+                        )
                     }
 
                     SmallTitle(

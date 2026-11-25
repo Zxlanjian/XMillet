@@ -1,4 +1,5 @@
 package io.github.univers629.millet.ui.util
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,18 +19,23 @@ import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
 import kotlinx.coroutines.delay
 
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.univers629.millet.ui.theme.LocalEnableProgressiveBlur
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
+import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
@@ -58,7 +64,6 @@ fun MilletTopAppBar(
     scrollBehavior: ScrollBehavior? = null,
     defaultWindowInsetsPadding: Boolean = true,
     bottomContent: @Composable () -> Unit = {},
-    buttonsAlwaysFloating: Boolean = true,
 ) {
     val backdrop = LocalBarBackdrop.current
     val progressive = LocalEnableProgressiveBlur.current && backdrop != null
@@ -68,26 +73,38 @@ fun MilletTopAppBar(
         color.isSpecified -> GlassTopAppBarDefaults.bandBrush(color)
         else -> GlassTopAppBarDefaults.bandBrush(MiuixTheme.colorScheme.surface)
     }
-    // 按钮常驻液态玻璃圆形：走 Miuix 的 isContentScrolled 重载。
-    // 默认重载只在内容滚到顶栏下方时才显示按钮玻璃底，静止时圆形会消失。
-    val scrolledFromBehavior = scrollBehavior?.state?.let { it.contentOffset < -1f || it.overscrollOffset < -1f } ?: true
+    // 与 Miuix 一致：只有内容下滑到顶栏下方、且顶栏走渐进式模糊时，按钮才浮起圆形液态玻璃。
+    // 关闭模糊或只用整块毛玻璃时保持纯图标，同时不再让顶栏采样按钮背景。
+    val contentScrolled = scrollBehavior?.state?.let {
+        it.contentOffset < -1f || it.overscrollOffset < -1f
+    } ?: false
     GlassTopAppBar(
         title = title,
-        isContentScrolled = buttonsAlwaysFloating || scrolledFromBehavior,
+        isContentScrolled = progressive && contentScrolled,
         modifier = modifier,
         expandable = expandable,
         progressiveBlur = progressive,
-        backdrop = backdrop,
+        backdrop = backdrop?.takeIf { progressive },
         largeTitle = largeTitle,
         subtitle = subtitle,
         scrollBehavior = scrollBehavior,
         bandBrush = band,
         defaultWindowInsetsPadding = defaultWindowInsetsPadding,
         navigationIcon = navigationIcon,
-        actions = actions,
+        actions = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MilletTopAppBarActionSpacing),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                actions()
+            }
+        },
         bottomContent = bottomContent,
     )
 }
+
+/** 顶栏玻璃按钮之间的间距，与 Miuix Glass 示例页保持一致。 */
+private val MilletTopAppBarActionSpacing = 8.dp
 
 /** 不可折叠的小标题版本（替代 SmallTopAppBar）。 */
 @Composable
@@ -145,6 +162,32 @@ fun BarIconButton(
         modifier = modifier.glassPopupAnchor(anchor, cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2),
     ) {
         Box(modifier = Modifier.glassPopupAnchorContent(anchor)) { content() }
+    }
+}
+
+/** 顶栏玻璃按钮的图标版本：统一 Miuix Glass 图标的 28dp 尺寸与 onSurface 着色。 */
+@Composable
+fun BarIconButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    holdDownState: Boolean = false,
+    tint: Color = MiuixTheme.colorScheme.onSurface,
+) {
+    BarIconButton(
+        onClick = onClick,
+        modifier = modifier,
+        enabled = enabled,
+        holdDownState = holdDownState,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier.size(28.dp),
+        )
     }
 }
 

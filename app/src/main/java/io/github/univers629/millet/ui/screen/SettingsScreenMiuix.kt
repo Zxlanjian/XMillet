@@ -1,6 +1,7 @@
 package io.github.univers629.millet.ui.screen
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
 import io.github.univers629.millet.ui.component.FoldablePreferenceCard
+import io.github.univers629.millet.ui.component.FoldablePreferenceSection
 import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
@@ -9,10 +10,8 @@ import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.MilletSmallTopAppBar
 import io.github.univers629.millet.ui.util.BarIconButton
 
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
 import io.github.univers629.millet.BuildConfig
@@ -76,7 +75,6 @@ import io.github.univers629.millet.core.PrefsSnapshot
 import io.github.univers629.millet.ui.BackupRestoreHelper
 import io.github.univers629.millet.ui.component.DialogBackHandler
 import io.github.univers629.millet.ui.component.MiuixConfirmDialog
-import io.github.univers629.millet.ui.component.TombStatsIcon
 import io.github.univers629.millet.ui.component.XMilletIcons
 import io.github.univers629.millet.ui.di.appUiContainer
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
@@ -94,6 +92,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
@@ -108,7 +107,6 @@ import top.yukonga.miuix.kmp.icon.extended.Backup
 import top.yukonga.miuix.kmp.icon.extended.Import
 import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.extended.Reset
-import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Tasks
 import top.yukonga.miuix.kmp.icon.extended.Tune
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
@@ -199,14 +197,6 @@ fun SettingsContent(
     val availableUpdateVersion = uiState.availableUpdateVersion
 
     var showRebootNotice by remember { mutableStateOf(false) }
-
-    val aliasDefault = remember {
-        ComponentName(context.packageName, "${context.packageName}.ui.MainActivityAlias")
-    }
-    var showLauncherIcon by remember {
-        val stateDefault = context.packageManager.getComponentEnabledSetting(aliasDefault)
-        mutableStateOf(stateDefault != PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
-    }
 
     var showResetConfirmDialog by remember { mutableStateOf(false) }
     var showSendLogDialog by remember { mutableStateOf(false) }
@@ -327,56 +317,20 @@ fun SettingsContent(
                             summary = "悬浮底栏、玻璃材质和动态取色",
                             onClick = onOpenAppearance
                         )
-
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = TombStatsIcon,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "墓碑统计",
-                            summary = "在底栏显示墓碑统计页：冻结、唤醒与拦截次数",
-                            checked = themeState.showTombStatsTab,
-                            onCheckedChange = { themeState.updateShowTombStatsTab(it) }
-                        )
-
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Show,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "显示桌面启动图标",
-                            summary = "关闭后可从 LSPosed 管理器的模块设置中打开 XMillet",
-                            checked = showLauncherIcon,
-                            onCheckedChange = { visible ->
-                                showLauncherIcon = visible
-                                context.packageManager.setComponentEnabledSetting(
-                                    aliasDefault,
-                                    if (visible) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                                    else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                                    PackageManager.DONT_KILL_APP
-                                )
-                            }
-                        )
                     }
 
                     SmallTitle(text = "全局策略")
-                    FoldablePreferenceCard(
-                        title = "Millet 墓碑冻结全局策略",
-                        summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
-                        icon = Icons.Rounded.CleaningServices,
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp)
+                            .padding(bottom = 12.dp)
                     ) {
+                        FoldablePreferenceSection(
+                            title = "Millet 墓碑冻结全局策略",
+                            summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
+                            icon = Icons.Rounded.CleaningServices,
+                        ) {
                         SwitchPreference(
                             startAction = {
                                 Icon(
@@ -459,13 +413,13 @@ fun SettingsContent(
                             checked = freezeDualApp,
                             onCheckedChange = { onSetBooleanPref(PrefsKeys.FREEZE_DUAL_APP, it) }
                         )
-                    }
-
-                    FoldablePreferenceCard(
-                        title = "Doze 深度睡眠策略",
-                        summary = "已开启 ${listOf(enableDoze, skipStateCheck, disableMotionListener).count { it }}/3 项",
-                        icon = Icons.Rounded.Bedtime,
-                    ) {
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                        FoldablePreferenceSection(
+                            title = "Doze 深度睡眠策略",
+                            summary = "已开启 ${listOf(enableDoze, skipStateCheck, disableMotionListener).count { it }}/3 项",
+                            icon = Icons.Rounded.Bedtime,
+                        ) {
                         SwitchPreference(
                             startAction = {
                                 Icon(
@@ -514,6 +468,7 @@ fun SettingsContent(
                             checked = disableMotionListener,
                             onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_MOTION_LISTENER, it) }
                         )
+                        }
                     }
 
                     SmallTitle(text = "日志与电量诊断")
