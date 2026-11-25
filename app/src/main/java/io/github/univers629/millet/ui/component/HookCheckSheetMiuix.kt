@@ -30,10 +30,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cancel
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -75,6 +71,10 @@ import top.yukonga.miuix.kmp.basic.LinearProgressIndicator
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Copy
+import top.yukonga.miuix.kmp.icon.glass.Close2
+import top.yukonga.miuix.kmp.icon.glass.Error
+import top.yukonga.miuix.kmp.icon.glass.Ok
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Copy
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
@@ -249,7 +249,7 @@ fun HookCheckSheetMiuix(
                 },
             ) {
                 Icon(
-                    imageVector = MiuixIcons.Copy,
+                    imageVector = MiuixIcons.Glass.Copy,
                     contentDescription = "复制检测结果",
                     tint = colorScheme.onBackground,
                 )
@@ -890,9 +890,9 @@ private fun collectEnvFingerprintInfo(context: Context): EnvFingerprintInfo {
 }
 
 private fun iconForLevel(level: HookDiagnosticLevel) = when (level) {
-    HookDiagnosticLevel.PASSED -> Icons.Rounded.CheckCircle
-    HookDiagnosticLevel.WARNING -> Icons.Rounded.Warning
-    HookDiagnosticLevel.FAILED -> Icons.Rounded.Cancel
+    HookDiagnosticLevel.PASSED -> MiuixIcons.Glass.Ok
+    HookDiagnosticLevel.WARNING -> MiuixIcons.Glass.Error
+    HookDiagnosticLevel.FAILED -> MiuixIcons.Glass.Close2
 }
 
 private fun iconColorForLevel(level: HookDiagnosticLevel, dark: Boolean): Color = when (level) {

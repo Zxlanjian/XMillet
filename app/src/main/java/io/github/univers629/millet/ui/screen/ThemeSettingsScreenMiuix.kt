@@ -24,6 +24,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
@@ -44,15 +45,6 @@ import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.BackHand
-import androidx.compose.material.icons.rounded.BlurOn
-import androidx.compose.material.icons.rounded.ColorLens
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.SpaceDashboard
-import androidx.compose.material.icons.rounded.Style
-import androidx.compose.material.icons.rounded.Swipe
-import androidx.compose.material.icons.rounded.WaterDrop
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -74,10 +66,13 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.univers629.millet.core.PredictiveBackController
-import io.github.univers629.millet.ui.component.TombStatsIcon
+import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
+import io.github.univers629.millet.ui.model.TombSection
+import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.UiThemeState
 import io.github.univers629.millet.ui.theme.keyColorOptions
@@ -85,16 +80,26 @@ import io.github.univers629.millet.ui.theme.supportsPredictiveBack
 import io.github.univers629.millet.ui.util.BlurredBar
 import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Tune
+import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
+import top.yukonga.miuix.kmp.icon.glass.GesturePassword
+import top.yukonga.miuix.kmp.icon.glass.HomeOutline
+import top.yukonga.miuix.kmp.icon.glass.Theme
+import top.yukonga.miuix.kmp.icon.glass.Wallpaper
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.extended.Show
+import top.yukonga.miuix.kmp.icon.extended.Tune
+import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
 import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
@@ -126,6 +131,7 @@ fun ThemeSettingsScreenMiuix(
         val componentState = context.packageManager.getComponentEnabledSetting(launcherAlias)
         mutableStateOf(componentState != PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
     }
+    var showTombSections by remember { mutableStateOf(false) }
 
     val paletteStyles = ThemePaletteStyle.entries
     val paletteLabels = listOf(
@@ -197,7 +203,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.SpaceDashboard,
+                                    imageVector = MiuixIcons.Glass.HomeOutline,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -214,7 +220,7 @@ fun ThemeSettingsScreenMiuix(
                         GlassDropdownPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.BlurOn,
+                                    imageVector = MiuixIcons.Glass.Wallpaper,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -245,7 +251,7 @@ fun ThemeSettingsScreenMiuix(
                             SwitchPreference(
                                 startAction = {
                                     Icon(
-                                        imageVector = Icons.Rounded.WaterDrop,
+                                        imageVector = MiuixIcons.Glass.Wallpaper,
                                         contentDescription = null,
                                         modifier = Modifier
                                         .padding(end = 8.dp)
@@ -263,7 +269,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = TombStatsIcon,
+                                    imageVector = MiuixIcons.Glass.DigitalStatistics,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -275,6 +281,22 @@ fun ThemeSettingsScreenMiuix(
                             summary = "在底栏显示墓碑统计页：冻结、唤醒与拦截次数",
                             checked = themeState.showTombStatsTab,
                             onCheckedChange = { themeState.updateShowTombStatsTab(it) }
+                        )
+
+                        ArrowPreference(
+                            startAction = {
+                                Icon(
+                                    imageVector = MiuixIcons.Glass.Tune,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(24.dp),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            title = "墓碑统计显示板块",
+                            summary = "已显示 ${themeState.tombSections.size}/${TombSection.entries.size} 个板块",
+                            onClick = { showTombSections = true }
                         )
 
                         SwitchPreference(
@@ -317,7 +339,7 @@ fun ThemeSettingsScreenMiuix(
                             SwitchPreference(
                                 startAction = {
                                     Icon(
-                                        imageVector = Icons.Rounded.BackHand,
+                                        imageVector = MiuixIcons.Glass.GesturePassword,
                                         contentDescription = null,
                                         modifier = Modifier
                                             .padding(end = 8.dp)
@@ -342,7 +364,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Swipe,
+                                    imageVector = MiuixIcons.Glass.GesturePassword,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -369,7 +391,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.ColorLens,
+                                    imageVector = MiuixIcons.Glass.Theme,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -393,7 +415,7 @@ fun ThemeSettingsScreenMiuix(
                                     title = "调色板风格 (PaletteStyle)",
                                     startAction = {
                                         Icon(
-                                            imageVector = Icons.Rounded.Palette,
+                                            imageVector = MiuixIcons.Glass.Wallpaper,
                                             contentDescription = null,
                                             modifier = Modifier
                                         .padding(end = 8.dp)
@@ -412,7 +434,7 @@ fun ThemeSettingsScreenMiuix(
                                     title = "色彩规范版本 (ColorSpec)",
                                     startAction = {
                                         Icon(
-                                            imageVector = Icons.Rounded.Style,
+                                            imageVector = MiuixIcons.Glass.Theme,
                                             contentDescription = null,
                                             modifier = Modifier
                                         .padding(end = 8.dp)
@@ -474,6 +496,13 @@ fun ThemeSettingsScreenMiuix(
                     )
                 }
             }
+
+            TombSectionPickerDialog(
+                show = showTombSections,
+                selected = themeState.tombSections,
+                onToggle = themeState::updateTombSection,
+                onDismissRequest = { showTombSections = false },
+            )
         }
     }
 }
@@ -562,4 +591,44 @@ private fun ColorButtonMiuix(
             }
         }
     }
+}
+
+@Composable
+private fun TombSectionPickerDialog(
+    show: Boolean,
+    selected: Set<String>,
+    onToggle: (String, Boolean) -> Unit,
+    onDismissRequest: () -> Unit,
+) {
+    if (!show) return
+    GlassDialog(
+        backdrop = PopupBackdropHolder.current,
+        show = true,
+        onDismissRequest = onDismissRequest,
+        insideMargin = DpSize(0.dp, 0.dp),
+        content = {
+            ProgressiveDialogLayout(
+                title = "墓碑统计显示板块",
+                maxBodyHeight = 420.dp,
+                headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
+                footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
+                footer = {
+                    TextButton(
+                        text = "完成",
+                        onClick = onDismissRequest,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+            ) {
+                TombSection.entries.forEach { section ->
+                    SwitchPreference(
+                        title = section.label,
+                        checked = section.id in selected,
+                        onCheckedChange = { onToggle(section.id, it) },
+                        insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                    )
+                }
+            }
+        }
+    )
 }

@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +30,8 @@ import io.github.univers629.millet.ui.model.AppIconSource
 import io.github.univers629.millet.ui.util.AppIconCache
 import io.github.univers629.millet.ui.util.StatsPackageMember
 import io.github.univers629.millet.ui.util.canStackStatsMemberIcons
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.GridView
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
@@ -106,7 +106,7 @@ fun StatsAppIcon(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.Apps,
+                        imageVector = MiuixIcons.Glass.GridView,
                         contentDescription = null,
                         tint = colorScheme.onSecondaryContainer,
                         modifier = Modifier.fillMaxSize().padding(extent * 0.18f),

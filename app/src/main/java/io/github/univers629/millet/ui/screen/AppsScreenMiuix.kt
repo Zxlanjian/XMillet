@@ -1,5 +1,6 @@
 package io.github.univers629.millet.ui.screen
 import top.yukonga.miuix.kmp.basic.InputField
+import io.github.univers629.millet.ui.util.MilletRefreshTexts
 import io.github.univers629.millet.ui.util.GlassOverlayListPopup
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import io.github.univers629.millet.ui.util.MilletTopAppBar
@@ -48,9 +49,6 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cloud
-import androidx.compose.material.icons.rounded.Layers
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -104,6 +102,8 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Cloud
+import top.yukonga.miuix.kmp.icon.glass.Layers
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.basic.SearchCleanup
@@ -294,6 +294,7 @@ fun AppsContent(
                 isRefreshing = isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = onRefresh,
+                refreshTexts = MilletRefreshTexts,
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 6.dp
                 ),
@@ -602,7 +603,7 @@ private fun PolicyHubCards(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         PolicyEntryCard(
-            icon = Icons.Rounded.Layers,
+            icon = MiuixIcons.Glass.Layers,
             title = "策略模板",
             subtitle = templateSubtitle,
             onClick = onOpenTemplates,
@@ -611,7 +612,7 @@ private fun PolicyHubCards(
                 .fillMaxHeight(),
         )
         PolicyEntryCard(
-            icon = Icons.Rounded.Cloud,
+            icon = MiuixIcons.Glass.Cloud,
             title = "官方云白名单",
             subtitle = cloudSubtitle,
             onClick = onOpenCloudWhitelist,

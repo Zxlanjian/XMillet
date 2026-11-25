@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cancel
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,6 +28,10 @@ import io.github.univers629.millet.core.XposedPrefsBridge
 import io.github.univers629.millet.ipc.HookCoverage
 import io.github.univers629.millet.ipc.PowerKeeperBinderClient
 import io.github.univers629.millet.ui.theme.isInDarkTheme
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Close2
+import top.yukonga.miuix.kmp.icon.glass.Error
+import top.yukonga.miuix.kmp.icon.glass.Ok
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -721,9 +721,9 @@ internal fun OverallStatusHeader(
         ) {
             Icon(
                 imageVector = when (level) {
-                    HookDiagnosticLevel.PASSED -> Icons.Rounded.CheckCircle
-                    HookDiagnosticLevel.WARNING -> Icons.Rounded.Warning
-                    HookDiagnosticLevel.FAILED -> Icons.Rounded.Cancel
+                    HookDiagnosticLevel.PASSED -> MiuixIcons.Glass.Ok
+                    HookDiagnosticLevel.WARNING -> MiuixIcons.Glass.Error
+                    HookDiagnosticLevel.FAILED -> MiuixIcons.Glass.Close2
                 },
                 contentDescription = null,
                 tint = iconColor,

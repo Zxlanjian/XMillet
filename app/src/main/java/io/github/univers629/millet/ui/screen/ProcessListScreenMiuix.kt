@@ -1,4 +1,5 @@
 package io.github.univers629.millet.ui.screen
+import io.github.univers629.millet.ui.util.MilletRefreshTexts
 import io.github.univers629.millet.ui.util.GlassOverlayListPopup
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import io.github.univers629.millet.ui.util.MilletTopAppBar
@@ -194,6 +195,7 @@ fun ProcessListContent(
                 isRefreshing = isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = onRefresh,
+                refreshTexts = MilletRefreshTexts,
                 contentPadding = PaddingValues(
                     top = innerPadding.calculateTopPadding() + 6.dp
                 ),

@@ -98,7 +98,7 @@ fun ProgressiveDialogLayout(
     var headerHeight by remember { mutableIntStateOf(0) }
     var footerHeight by remember { mutableIntStateOf(0) }
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    Box(modifier = modifier.fillMaxWidth().heightIn(max = maxBodyHeight)) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

@@ -35,6 +35,7 @@ import io.github.univers629.millet.ui.component.DropdownItem
 import io.github.univers629.millet.ui.component.ListPopupDefaults
 import io.github.univers629.millet.ui.component.MiuixConfirmDialog
 import io.github.univers629.millet.ui.di.appUiContainer
+import io.github.univers629.millet.ui.model.TombSection
 import io.github.univers629.millet.ui.model.AppFreezeStats
 import io.github.univers629.millet.ui.model.StatsLoadState
 import io.github.univers629.millet.ui.screen.tombstats.AppStatsDetailSheet
@@ -46,6 +47,7 @@ import io.github.univers629.millet.ui.screen.tombstats.formatClock
 import io.github.univers629.millet.ui.screen.tombstats.formatDateTime
 import io.github.univers629.millet.ui.screen.tombstats.statsContent
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
+import io.github.univers629.millet.ui.util.MilletRefreshTexts
 import io.github.univers629.millet.ui.util.BarIconButton
 import io.github.univers629.millet.ui.util.BlurredBar
 import io.github.univers629.millet.ui.util.GlassOverlayListPopup
@@ -81,6 +83,7 @@ fun TombStatsScreenMiuix(
     isActive: Boolean,
     serviceAlive: Boolean,
     statsEnabled: Boolean = true,
+    visibleSections: Set<String> = TombSection.allIds,
     bottomInnerPadding: Dp,
     onEnableStats: (() -> Unit)? = null,
     onOpenAppProfile: (packageName: String, uid: Int) -> Unit,
@@ -100,6 +103,7 @@ fun TombStatsScreenMiuix(
 
     TombStatsContent(
         uiState = uiState,
+        visibleSections = visibleSections,
         bottomInnerPadding = bottomInnerPadding,
         onSelectWindow = vm::selectWindow,
         onSelectRankMode = vm::selectRankMode,
@@ -123,6 +127,7 @@ fun TombStatsScreenMiuix(
 @Composable
 fun TombStatsContent(
     uiState: TombStatsUiState,
+    visibleSections: Set<String> = TombSection.allIds,
     bottomInnerPadding: Dp,
     onSelectWindow: (Int) -> Unit,
     onSelectRankMode: (Int) -> Unit,
@@ -245,6 +250,7 @@ fun TombStatsContent(
                 isRefreshing = uiState.isRefreshing,
                 pullToRefreshState = pullToRefreshState,
                 onRefresh = onManualRefresh,
+                refreshTexts = MilletRefreshTexts,
                 contentPadding = PaddingValues(top = innerPadding.calculateTopPadding() + 6.dp),
                 topAppBarScrollBehavior = scrollBehavior,
             ) {
@@ -329,6 +335,7 @@ fun TombStatsContent(
                             } else {
                                 statsContent(
                                     snap = snap,
+                                    visibleSections = visibleSections,
                                     rankModeIndex = uiState.rankModeIndex,
                                     onRankModeChange = onSelectRankMode,
                                     onOpenDetail = { onSelectDetail(it.uid) },

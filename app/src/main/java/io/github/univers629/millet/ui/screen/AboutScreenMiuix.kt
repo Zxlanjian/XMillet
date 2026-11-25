@@ -47,13 +47,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Android
-import androidx.compose.material.icons.rounded.Code
-import androidx.compose.material.icons.rounded.Description
-import androidx.compose.material.icons.rounded.Memory
-import androidx.compose.material.icons.rounded.Policy
-import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -109,6 +102,12 @@ import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Document
+import top.yukonga.miuix.kmp.icon.glass.HtmlViewer
+import top.yukonga.miuix.kmp.icon.glass.MemoryFunction
+import top.yukonga.miuix.kmp.icon.glass.MyDevice
+import top.yukonga.miuix.kmp.icon.glass.Phone
+import top.yukonga.miuix.kmp.icon.glass.SecurityStatus
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.LocalDismissState
@@ -421,7 +420,7 @@ fun AboutScreenMiuix(
                         BasicComponent(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Smartphone,
+                                    imageVector = MiuixIcons.Glass.Phone,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -435,7 +434,7 @@ fun AboutScreenMiuix(
                         BasicComponent(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Android,
+                                    imageVector = MiuixIcons.Glass.MyDevice,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -449,7 +448,7 @@ fun AboutScreenMiuix(
                         BasicComponent(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Memory,
+                                    imageVector = MiuixIcons.Glass.MemoryFunction,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -492,7 +491,7 @@ fun AboutScreenMiuix(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Description,
+                                    imageVector = MiuixIcons.Glass.Document,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -507,7 +506,7 @@ fun AboutScreenMiuix(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Code,
+                                    imageVector = MiuixIcons.Glass.HtmlViewer,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -522,7 +521,7 @@ fun AboutScreenMiuix(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Policy,
+                                    imageVector = MiuixIcons.Glass.SecurityStatus,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -736,7 +735,7 @@ fun AboutRepoScreenMiuix(
                         summary = repoUrl,
                         startAction = {
                             Icon(
-                                imageVector = Icons.Rounded.Code,
+                                imageVector = MiuixIcons.Glass.HtmlViewer,
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 8.dp),
                                 tint = colorScheme.onSurface
@@ -989,7 +988,7 @@ fun AboutLicensesScreenMiuix(
                     BasicComponent(
                         startAction = {
                             Icon(
-                                imageVector = Icons.Rounded.Policy,
+                                imageVector = MiuixIcons.Glass.SecurityStatus,
                                 contentDescription = null,
                                 modifier = Modifier.padding(end = 8.dp),
                                 tint = colorScheme.onSurface,

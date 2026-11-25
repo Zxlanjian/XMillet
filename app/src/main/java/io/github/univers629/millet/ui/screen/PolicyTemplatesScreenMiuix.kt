@@ -49,10 +49,6 @@ import androidx.compose.foundation.text.input.maxLengthTrim
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Layers
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -117,10 +113,12 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Add
+import top.yukonga.miuix.kmp.icon.glass.Layers
+import top.yukonga.miuix.kmp.icon.glass.Tune
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.glass.Add
 import top.yukonga.miuix.kmp.icon.glass.MoreCircle
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -417,7 +415,7 @@ fun PolicyTemplatesContent(
                 ArrowPreference(
                     startAction = {
                         Icon(
-                            imageVector = Icons.Rounded.Add,
+                            imageVector = MiuixIcons.Glass.Add,
                             contentDescription = null,
                             modifier = Modifier
                                 .padding(end = 8.dp)
@@ -454,7 +452,7 @@ private fun TemplateArrowRow(
     ArrowPreference(
         startAction = {
             Icon(
-                imageVector = if (template.builtIn) Icons.Rounded.Layers else Icons.Rounded.Tune,
+                imageVector = if (template.builtIn) MiuixIcons.Glass.Layers else MiuixIcons.Glass.Tune,
                 contentDescription = null,
                 modifier = Modifier
                     .padding(end = 8.dp)
@@ -623,7 +621,7 @@ private fun PolicyTemplateDetailContent(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = if (template.builtIn) Icons.Rounded.Layers else Icons.Rounded.Tune,
+                            imageVector = if (template.builtIn) MiuixIcons.Glass.Layers else MiuixIcons.Glass.Tune,
                             contentDescription = null,
                             tint = colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(26.dp)

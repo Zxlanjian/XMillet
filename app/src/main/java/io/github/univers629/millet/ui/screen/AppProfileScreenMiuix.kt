@@ -38,14 +38,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.AcUnit
-import androidx.compose.material.icons.rounded.BatteryChargingFull
-import androidx.compose.material.icons.rounded.Block
-import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.PlayCircleOutline
-import androidx.compose.material.icons.rounded.SignalWifiOff
-import androidx.compose.material.icons.rounded.SyncDisabled
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -80,7 +72,6 @@ import io.github.univers629.millet.ui.component.ListPopupDefaults
 import io.github.univers629.millet.ui.component.StatusTagMiuix
 import io.github.univers629.millet.ui.component.WarningCard
 import io.github.univers629.millet.ui.component.WarningLevel
-import io.github.univers629.millet.ui.component.XMilletIcons
 import io.github.univers629.millet.ui.di.appUiContainer
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.util.BlurredBar
@@ -107,6 +98,13 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.SecurityStatus
+import top.yukonga.miuix.kmp.icon.glass.Battery100
+import top.yukonga.miuix.kmp.icon.glass.Blocklist
+import top.yukonga.miuix.kmp.icon.glass.CoolingFan
+import top.yukonga.miuix.kmp.icon.glass.NoNetwork
+import top.yukonga.miuix.kmp.icon.glass.NotificationsStatusBar
+import top.yukonga.miuix.kmp.icon.glass.PlayCircleFill
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.glass.MoreCircle
 import top.yukonga.miuix.kmp.icon.extended.Refresh
@@ -615,7 +613,7 @@ fun AppProfileContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = XMilletIcons.AppPolicy,
+                                    imageVector = MiuixIcons.Glass.SecurityStatus,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -635,7 +633,7 @@ fun AppProfileContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.NotificationsActive,
+                                    imageVector = MiuixIcons.Glass.NotificationsStatusBar,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -651,7 +649,7 @@ fun AppProfileContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.PlayCircleOutline,
+                                    imageVector = MiuixIcons.Glass.PlayCircleFill,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -677,7 +675,7 @@ fun AppProfileContent(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.AcUnit,
+                                    imageVector = MiuixIcons.Glass.CoolingFan,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)
@@ -699,7 +697,7 @@ fun AppProfileContent(
                                 SwitchPreference(
                                     startAction = {
                                         Icon(
-                                            imageVector = Icons.Rounded.Block,
+                                            imageVector = MiuixIcons.Glass.Blocklist,
                                             contentDescription = null,
                                             modifier = Modifier
                                         .padding(end = 8.dp)
@@ -715,7 +713,7 @@ fun AppProfileContent(
                                 SwitchPreference(
                                     startAction = {
                                         Icon(
-                                            imageVector = Icons.Rounded.SyncDisabled,
+                                            imageVector = MiuixIcons.Glass.NoNetwork,
                                             contentDescription = null,
                                             modifier = Modifier
                                         .padding(end = 8.dp)
@@ -731,7 +729,7 @@ fun AppProfileContent(
                                 SwitchPreference(
                                     startAction = {
                                         Icon(
-                                            imageVector = Icons.Rounded.SignalWifiOff,
+                                            imageVector = MiuixIcons.Glass.NoNetwork,
                                             contentDescription = null,
                                             modifier = Modifier
                                         .padding(end = 8.dp)
@@ -761,7 +759,7 @@ fun AppProfileContent(
                         ArrowPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = Icons.Rounded.BatteryChargingFull,
+                                    imageVector = MiuixIcons.Glass.Battery100,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)

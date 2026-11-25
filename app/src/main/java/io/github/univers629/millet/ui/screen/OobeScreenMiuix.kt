@@ -52,10 +52,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Apps
-import androidx.compose.material.icons.rounded.Widgets
-import io.github.univers629.millet.ui.component.XMilletIcons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -138,6 +134,9 @@ import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.SecurityStatus
+import top.yukonga.miuix.kmp.icon.glass.GridView
+import top.yukonga.miuix.kmp.icon.glass.Widget
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -425,7 +424,7 @@ fun OobeScreenMiuix(
                                             horizontalAlignment = Alignment.CenterHorizontally
                                         ) {
                                             Icon(
-                                                imageVector = XMilletIcons.AppPolicy,
+                                                imageVector = MiuixIcons.Glass.SecurityStatus,
                                                 contentDescription = null,
                                                 modifier = Modifier.size(72.dp),
                                                 tint = colorScheme.primary
@@ -470,7 +469,7 @@ fun OobeScreenMiuix(
                                             BasicComponent(
                                                 startAction = {
                                                     Icon(
-                                                        imageVector = Icons.Rounded.Widgets,
+                                                        imageVector = MiuixIcons.Glass.Widget,
                                                         contentDescription = null,
                                                         modifier = Modifier
                                                             .padding(end = 8.dp)
@@ -508,7 +507,7 @@ fun OobeScreenMiuix(
                                             BasicComponent(
                                                 startAction = {
                                                     Icon(
-                                                        imageVector = Icons.Rounded.Apps,
+                                                        imageVector = MiuixIcons.Glass.GridView,
                                                         contentDescription = null,
                                                         modifier = Modifier
                                                             .padding(end = 8.dp)

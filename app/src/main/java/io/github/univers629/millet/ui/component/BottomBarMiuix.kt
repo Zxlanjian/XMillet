@@ -42,8 +42,11 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Home
-import top.yukonga.miuix.kmp.icon.extended.Settings
+import top.yukonga.miuix.kmp.icon.glass.SecurityStatus
+import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
+import top.yukonga.miuix.kmp.icon.glass.HomeOutline
+import top.yukonga.miuix.kmp.icon.glass.SettingsOutline
+import top.yukonga.miuix.kmp.icon.glass.Processor
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
 
@@ -119,11 +122,11 @@ enum class BottomBarDestination(
     val label: String,
     val icon: ImageVector,
 ) {
-    Home("主页", MiuixIcons.Home),
-    Processes("进程列表", XMilletIcons.ProcessBolt),
-    TombStats("墓碑统计", TombStatsIcon),
-    Apps("应用策略", XMilletIcons.AppPolicy),
-    Settings("设置", MiuixIcons.Settings);
+    Home("主页", MiuixIcons.Glass.HomeOutline),
+    Processes("进程列表", MiuixIcons.Glass.Processor),
+    TombStats("墓碑统计", MiuixIcons.Glass.DigitalStatistics),
+    Apps("应用策略", MiuixIcons.Glass.SecurityStatus),
+    Settings("设置", MiuixIcons.Glass.SettingsOutline);
 
     companion object {
         /** 当前可见的底栏目的地（顺序即 Pager 页序）。页面下标一律经由此列表换算，禁止硬编码。 */

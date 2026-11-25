@@ -44,8 +44,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -85,6 +83,7 @@ import io.github.univers629.millet.ui.component.StatsAppIcon
 import io.github.univers629.millet.ui.component.StatusTagMiuix
 import io.github.univers629.millet.ui.component.WarningCard
 import io.github.univers629.millet.ui.component.WarningLevel
+import io.github.univers629.millet.ui.model.TombSection
 import io.github.univers629.millet.ui.model.AppFreezeStats
 import io.github.univers629.millet.ui.model.FreezeStatsSnapshot
 import io.github.univers629.millet.ui.model.RankMode
@@ -109,6 +108,8 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Filter
+import top.yukonga.miuix.kmp.icon.glass.QuietMode
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.ExpandLess
@@ -117,6 +118,7 @@ import top.yukonga.miuix.kmp.icon.extended.Filter
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.squircle.squircleBorder
+import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
@@ -153,6 +155,7 @@ private fun statsWarningTextColor(): Color = if (isInDarkTheme()) Color(0xFFFF9F
 /** 统计主体：概览 → 息屏 → 原因 → 时段 → 拦截 → 排行 → 最近动态 → 页脚 */
 internal fun LazyListScope.statsContent(
     snap: FreezeStatsSnapshot,
+    visibleSections: Set<String> = TombSection.allIds,
     rankModeIndex: Int,
     onRankModeChange: (Int) -> Unit,
     onOpenDetail: (AppFreezeStats) -> Unit,
@@ -199,7 +202,7 @@ internal fun LazyListScope.statsContent(
         }
     }
 
-    item(key = "native_records") {
+    if ("native_records" in visibleSections) item(key = "native_records") {
         Card(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             insideMargin = PaddingValues(16.dp),
@@ -219,7 +222,7 @@ internal fun LazyListScope.statsContent(
         ScreenOffBanner(snap)
     }
 
-    item(key = "wake_reasons") {
+    if ("wake_reasons" in visibleSections) item(key = "wake_reasons") {
         SmallTitle(text = "系统解冻记录 · 原因")
         Card(
             modifier = Modifier
@@ -231,7 +234,7 @@ internal fun LazyListScope.statsContent(
         }
     }
 
-    if (snap.buckets.isNotEmpty()) {
+    if (snap.buckets.isNotEmpty() && "time_distribution" in visibleSections) {
         item(key = "time_distribution") {
             SmallTitle(
                 text = if (snap.window == StatsWindow.TODAY) "系统解冻记录 · 每小时" else "系统解冻记录 · 每天",
@@ -250,7 +253,7 @@ internal fun LazyListScope.statsContent(
         }
     }
 
-    item(key = "interventions") {
+    if ("intervention" in visibleSections) item(key = "interventions") {
         SmallTitle(text = "XMillet 干预")
         Card(
             modifier = Modifier
@@ -262,7 +265,7 @@ internal fun LazyListScope.statsContent(
         }
     }
 
-    item(key = "app_ranking") {
+    if ("rank" in visibleSections) item(key = "app_ranking") {
         AppRankSection(
             apps = snap.apps,
             modeIndex = rankModeIndex,
@@ -271,7 +274,7 @@ internal fun LazyListScope.statsContent(
         )
     }
 
-    if (snap.recent.isNotEmpty()) {
+    if (snap.recent.isNotEmpty() && "recent" in visibleSections) {
         item(key = "recent_events") {
             RecentEventsSection(
                 events = snap.recent,
@@ -353,7 +356,7 @@ private fun ScreenOffBanner(snap: FreezeStatsSnapshot) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Bedtime,
+                    imageVector = MiuixIcons.Glass.QuietMode,
                     contentDescription = null,
                     tint = accent,
                     modifier = Modifier.size(20.dp),
@@ -656,11 +659,11 @@ private fun AppRankSection(
     val sorted = remember(baseSorted, hideSystemApps) {
         if (hideSystemApps) baseSorted.filter { !it.isSystem } else baseSorted
     }
-    // 收起搜索时立即按「无搜索」排版，查询词等收起动画结束后再清空，避免框内文字与列表各跳一次
+    // 收起搜索时立即恢复列表并清空查询词，整个收起过程只发生一次布局变化，
+    // 避免动画结束后的第二次重组造成收尾卡顿。
     val activeQuery = if (searchVisible) searchQuery else ""
     LaunchedEffect(searchVisible) {
         if (!searchVisible && searchQuery.isNotEmpty()) {
-            delay(320)
             searchQuery = ""
         }
     }
@@ -697,7 +700,7 @@ private fun AppRankSection(
                     modifier = Modifier.size(36.dp),
                 ) {
                     Icon(
-                        imageVector = MiuixIcons.Filter,
+                        imageVector = MiuixIcons.Glass.Filter,
                         contentDescription = if (hideSystemApps) "显示系统应用" else "隐藏系统应用",
                         tint = if (hideSystemApps) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
                         modifier = Modifier.size(20.dp),
@@ -840,6 +843,7 @@ private fun RankModeTabRow(
                             Modifier.squircleBorder(width = 1.dp, color = colorScheme.outline, cornerRadius = 10.dp)
                         },
                     )
+                    .squircleClip(cornerRadius = 10.dp)
                     .selectable(
                         selected = selected,
                         role = Role.Tab,

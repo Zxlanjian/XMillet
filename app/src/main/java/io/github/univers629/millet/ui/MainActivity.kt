@@ -504,6 +504,7 @@ class MainActivity : ComponentActivity() {
                                                 isActive = isCurrentPage && isForegroundStarted && currentRoute == Route.Main,
                                                 serviceAlive = serviceAlive,
                                                 statsEnabled = themeState.showTombStatsTab,
+                                                visibleSections = themeState.tombSections,
                                                 bottomInnerPadding = bottomNavPadding,
                                                 onEnableStats = { themeState.updateShowTombStatsTab(true) },
                                                 onOpenAppProfile = openProfileByTarget,

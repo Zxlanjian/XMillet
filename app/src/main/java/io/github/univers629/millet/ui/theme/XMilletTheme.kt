@@ -39,6 +39,7 @@ import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.findViewTreeNavigationEventDispatcherOwner
 import androidx.navigationevent.setViewTreeNavigationEventDispatcherOwner
 import androidx.navigationevent.toNavigationEvent
+import io.github.univers629.millet.ui.model.TombSection
 import io.github.univers629.millet.core.PrefReader
 import io.github.univers629.millet.core.PrefsDefaults
 import io.github.univers629.millet.core.PrefsKeys
@@ -84,6 +85,7 @@ class UiThemeState(private val prefs: SharedPreferences) {
         private const val KEY_PREDICTIVE_BACK = "ui_predictive_back"   // 预测性返回（OnBackInvoked 通道），默认关闭
         private const val KEY_SWIPE_BACK = "ui_swipe_back"             // 横移返回手势，默认开启
         private const val KEY_PROGRESSIVE_BLUR = "ui_progressive_blur" // 顶栏/底栏渐进式模糊
+        private const val KEY_TOMB_SECTIONS = "ui_tomb_sections"       // 墓碑统计页显示的板块
     }
 
     /**
@@ -109,6 +111,19 @@ class UiThemeState(private val prefs: SharedPreferences) {
         val synced = PrefReader.readUiBoolean(prefs, PrefsKeys.FREEZE_STATS)
         showTombStatsTab = synced
         prefs.edit().putBoolean(KEY_SHOW_TOMB_STATS, synced).apply()
+    }
+
+    /** 墓碑统计页里允许显示的板块（未设置时全部显示）。 */
+    var tombSections by mutableStateOf(
+        TombSection.parse(prefs.getStringSet(KEY_TOMB_SECTIONS, null)?.toSet())
+    )
+        private set
+
+    fun updateTombSection(id: String, enabled: Boolean) {
+        val next = tombSections.toMutableSet()
+        if (enabled) next.add(id) else next.remove(id)
+        tombSections = next.toSet()
+        prefs.edit().putStringSet(KEY_TOMB_SECTIONS, next).apply()
     }
 
     fun syncFromSnapshot(snapshot: PrefsSnapshot) {
