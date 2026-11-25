@@ -126,6 +126,9 @@ class MainActivity : ComponentActivity() {
         data object CloudWhitelist : Route
 
         @Serializable
+        data object Apps : Route
+
+        @Serializable
         data object Appearance : Route
 
         @Serializable
@@ -492,12 +495,14 @@ class MainActivity : ComponentActivity() {
                                                 },
                                                 onOpenAbout = { navigator.push(Route.About) },
                                                 onOpenAppProfile = openProfileByTarget,
+                                                onOpenApps = { navigator.push(Route.Apps) },
                                             )
 
                                             BottomBarDestination.Processes -> ProcessListRoute(
                                                 isCurrentPage = isCurrentPage,
                                                 bottomInnerPadding = bottomNavPadding,
                                                 onOpenAppProfile = openProfileByTarget,
+                                                onOpenApps = { navigator.push(Route.Apps) },
                                             )
 
                                             BottomBarDestination.TombStats -> TombStatsScreenMiuix(
@@ -508,16 +513,6 @@ class MainActivity : ComponentActivity() {
                                                 bottomInnerPadding = bottomNavPadding,
                                                 onEnableStats = { themeState.updateShowTombStatsTab(true) },
                                                 onOpenAppProfile = openProfileByTarget,
-                                            )
-
-                                            BottomBarDestination.Apps -> AppsRoute(
-                                                isCurrentPage = isCurrentPage,
-                                                bottomInnerPadding = bottomNavPadding,
-                                                onOpenAppProfile = { app ->
-                                                    navigator.push(Route.AppProfile(app.packageName, app.uid))
-                                                },
-                                                onOpenTemplates = { navigator.push(Route.PolicyTemplates) },
-                                                onOpenCloudWhitelist = { navigator.push(Route.CloudWhitelist) },
                                             )
 
                                             BottomBarDestination.Settings -> SettingsRoute(
@@ -540,6 +535,19 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.align(Alignment.BottomCenter)
                                     )
                                 }
+                            }
+
+                            entry<Route.Apps>(swipeDismiss = swipeDismiss) {
+                                AppsRoute(
+                                    isCurrentPage = true,
+                                    bottomInnerPadding = 0.dp,
+                                    onOpenAppProfile = { app ->
+                                        navigator.push(Route.AppProfile(app.packageName, app.uid))
+                                    },
+                                    onOpenTemplates = { navigator.push(Route.PolicyTemplates) },
+                                    onOpenCloudWhitelist = { navigator.push(Route.CloudWhitelist) },
+                                    onBack = { navigator.pop() },
+                                )
                             }
 
                             entry<Route.Appearance>(swipeDismiss = swipeDismiss) {

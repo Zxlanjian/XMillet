@@ -102,6 +102,7 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.glass.Cloud
 import top.yukonga.miuix.kmp.icon.glass.Layers
 import top.yukonga.miuix.kmp.icon.basic.ArrowRight
@@ -192,6 +193,7 @@ fun AppsRoute(
     onOpenAppProfile: (InstalledAppUiModel) -> Unit,
     onOpenTemplates: () -> Unit,
     onOpenCloudWhitelist: () -> Unit,
+    onBack: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val container = remember(context) { context.appUiContainer }
@@ -212,6 +214,7 @@ fun AppsRoute(
         onResetFilters = vm::resetFilters,
         onRefresh = vm::refresh,
         onOpenAppProfile = onOpenAppProfile,
+        onBack = onBack,
         onOpenTemplates = onOpenTemplates,
         onOpenCloudWhitelist = onOpenCloudWhitelist,
     )
@@ -230,6 +233,7 @@ fun AppsContent(
     onOpenAppProfile: (InstalledAppUiModel) -> Unit,
     onOpenTemplates: () -> Unit = {},
     onOpenCloudWhitelist: () -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
     val enableBlur = LocalEnableBlur.current
@@ -252,6 +256,15 @@ fun AppsContent(
                 MilletTopAppBar(
                     color = barColor,
                     title = "应用策略 (${filteredApps.size})",
+                    navigationIcon = {
+                        if (onBack != null) {
+                            BarIconButton(
+                                icon = MiuixIcons.Glass.Back,
+                                contentDescription = "返回",
+                                onClick = onBack,
+                            )
+                        }
+                    },
                     actions = {
                         val showTopPopup = remember { mutableStateOf(false) }
                         BarIconButton(

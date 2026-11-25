@@ -1,6 +1,7 @@
 package io.github.univers629.millet.ui.component
 
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -132,7 +133,6 @@ enum class BottomBarDestination(
     Home("主页", MiuixIcons.Glass.HomeOutline, MiuixIcons.Glass.HomeFill),
     Processes("进程列表", MiuixIcons.Glass.ListView, MiuixIcons.Glass.ListView),
     TombStats("墓碑统计", MiuixIcons.Glass.DigitalStatistics, MiuixIcons.Glass.DigitalStatistics),
-    Apps("应用策略", MiuixIcons.Glass.SecurityStatus, MiuixIcons.Glass.SecurityStatus),
     Settings("设置", MiuixIcons.Glass.SettingsOutline, MiuixIcons.Glass.SettingsFill);
 
     fun icon(selected: Boolean): ImageVector = if (selected) iconFill else iconOutline
@@ -208,16 +208,21 @@ fun BoxScope.BottomBarMiuix(
         }
 
         1 -> {
-            FloatingNavigationBar(
-                modifier = modifier.align(Alignment.BottomCenter),
+            // FloatingNavigationBar 只把 modifier 应用到内部 Row，需要外层 Box 负责贴底。
+            Box(
+                modifier = modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
             ) {
-                items.forEachIndexed { index, item ->
-                    FloatingNavigationBarItem(
-                        selected = safeSelectedIndex == index,
-                        onClick = { mainState.animateToPage(index) },
-                        icon = destinations[index].icon(safeSelectedIndex == index),
-                        label = item.label,
-                    )
+                FloatingNavigationBar(modifier = Modifier.fillMaxWidth()) {
+                    items.forEachIndexed { index, item ->
+                        FloatingNavigationBarItem(
+                            selected = safeSelectedIndex == index,
+                            onClick = { mainState.animateToPage(index) },
+                            icon = destinations[index].icon(safeSelectedIndex == index),
+                            label = item.label,
+                        )
+                    }
                 }
             }
         }

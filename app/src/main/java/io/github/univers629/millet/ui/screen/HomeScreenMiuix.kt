@@ -142,6 +142,7 @@ fun HomeRoute(
     onNavigateToProcessList: (filterIndex: Int) -> Unit,
     onOpenAbout: () -> Unit,
     onOpenAppProfile: (packageName: String, uid: Int) -> Unit,
+    onOpenApps: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val runtimeRepo = remember(context) { context.appUiContainer.runtimeAndAppsRepository }
@@ -157,6 +158,7 @@ fun HomeRoute(
         onThawAll = vm::thawAll,
         onNavigateToTab = onNavigateToTab,
         onNavigateToProcessList = onNavigateToProcessList,
+        onOpenApps = onOpenApps,
         onOpenAbout = onOpenAbout,
         onOpenAppProfile = onOpenAppProfile,
         snapshotUnavailable = uiState.snapshotUnavailable,
@@ -177,6 +179,7 @@ fun HomeScreenMiuix(
     },
     onOpenAbout: () -> Unit = {},
     onOpenAppProfile: (packageName: String, uid: Int) -> Unit = { _, _ -> },
+    onOpenApps: () -> Unit = {},
     snapshotUnavailable: Boolean = false,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
@@ -332,7 +335,7 @@ fun HomeScreenMiuix(
                             count = configuredRuleCount,
                             unit = "应用",
                             modifier = Modifier.weight(1f),
-                            onClick = { onNavigateToTab(io.github.univers629.millet.ui.component.BottomBarDestination.Apps) }
+                            onClick = onOpenApps
                         )
                     }
                 }
@@ -475,11 +478,11 @@ private fun StatusCardMiuix(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .offset(27.dp, 31.dp),
+                        .offset(8.dp, 6.dp),
                     contentAlignment = Alignment.BottomEnd
                 ) {
                     Icon(
-                        modifier = Modifier.size(110.dp),
+                        modifier = Modifier.size(64.dp),
                         imageVector = if (isWorking) {
                             MiuixIcons.Ok
                         } else {

@@ -232,6 +232,32 @@ fun ThemeSettingsScreenMiuix(
                             backdrop = backdrop,
                         )
 
+                        GlassDropdownPreference(
+                            startAction = {
+                                Icon(
+                                    imageVector = MiuixIcons.Glass.Wallpaper,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .padding(end = 8.dp)
+                                        .size(24.dp),
+                                    tint = colorScheme.onBackground
+                                )
+                            },
+                            title = "背景模糊",
+                            summary = "高斯模糊为整块毛玻璃；渐进式模糊为顶栏边缘渐隐；关闭后顶栏为纯白",
+                            items = listOf("关闭", "高斯模糊", "渐进式模糊"),
+                            selectedIndex = when {
+                                !themeState.enableBlur -> 0
+                                themeState.enableProgressiveBlur -> 2
+                                else -> 1
+                            },
+                            onSelectedIndexChange = { idx ->
+                                themeState.updateEnableBlur(idx != 0)
+                                if (idx != 0) themeState.updateEnableProgressiveBlur(idx == 2)
+                            },
+                            backdrop = backdrop,
+                        )
+
                         SwitchPreference(
                             startAction = {
                                 Icon(
@@ -568,10 +594,9 @@ private fun TombSectionPickerDialog(
     onToggle: (String, Boolean) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
-    if (!show) return
     GlassBottomSheet(
         backdrop = PopupBackdropHolder.current,
-        show = true,
+        show = show,
         title = "墓碑统计显示板块",
         insideMargin = DpSize(16.dp, 8.dp),
         endAction = {
