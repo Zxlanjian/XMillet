@@ -34,6 +34,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
+import io.github.univers629.millet.ui.theme.LocalFloatingBottomBarStyle
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
@@ -42,6 +45,9 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.SettingsFill
+import top.yukonga.miuix.kmp.icon.glass.ListView
+import top.yukonga.miuix.kmp.icon.glass.HomeFill
 import top.yukonga.miuix.kmp.icon.glass.SecurityStatus
 import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
 import top.yukonga.miuix.kmp.icon.glass.HomeOutline
@@ -120,13 +126,16 @@ fun rememberMainPagerState(
 
 enum class BottomBarDestination(
     val label: String,
-    val icon: ImageVector,
+    val iconOutline: ImageVector,
+    val iconFill: ImageVector,
 ) {
-    Home("主页", MiuixIcons.Glass.HomeOutline),
-    Processes("进程列表", MiuixIcons.Glass.Processor),
-    TombStats("墓碑统计", MiuixIcons.Glass.DigitalStatistics),
-    Apps("应用策略", MiuixIcons.Glass.SecurityStatus),
-    Settings("设置", MiuixIcons.Glass.SettingsOutline);
+    Home("主页", MiuixIcons.Glass.HomeOutline, MiuixIcons.Glass.HomeFill),
+    Processes("进程列表", MiuixIcons.Glass.ListView, MiuixIcons.Glass.ListView),
+    TombStats("墓碑统计", MiuixIcons.Glass.DigitalStatistics, MiuixIcons.Glass.DigitalStatistics),
+    Apps("应用策略", MiuixIcons.Glass.SecurityStatus, MiuixIcons.Glass.SecurityStatus),
+    Settings("设置", MiuixIcons.Glass.SettingsOutline, MiuixIcons.Glass.SettingsFill);
+
+    fun icon(selected: Boolean): ImageVector = if (selected) iconFill else iconOutline
 
     companion object {
         /** 当前可见的底栏目的地（顺序即 Pager 页序）。页面下标一律经由此列表换算，禁止硬编码。 */
@@ -155,14 +164,14 @@ fun BoxScope.BottomBarMiuix(
     modifier: Modifier = Modifier,
 ) {
     val enableBlur = LocalEnableBlur.current
-    val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
     val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
+    val floatingBottomBarStyle = LocalFloatingBottomBarStyle.current
     val bottomBlurActive = enableBlur && blurBackdrop != null
 
     val items = destinations.map { destination ->
         NavigationItem(
             label = destination.label,
-            icon = destination.icon,
+            icon = destination.icon(false),
         )
     }
     // 5 个 Tab 时收窄：5×60 + 8 + 2×16 = 340dp，紧凑屏 (360dp) 也有余量且不挤压文字；4 个 Tab 保持原尺寸
@@ -171,69 +180,88 @@ fun BoxScope.BottomBarMiuix(
     val sideMargin = if (dense) 16.dp else 28.dp
     val safeSelectedIndex = mainState.selectedPage.coerceIn(0, (items.size - 1).coerceAtLeast(0))
 
-    if (!enableFloatingBottomBar) {
-        BlurredBar(
-            backdrop = blurBackdrop,
-            blurActive = bottomBlurActive,
-            progressiveSupported = false,
-            modifier = modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-        ) {
-            NavigationBar(
-                modifier = Modifier.fillMaxWidth(),
-                color = if (bottomBlurActive) Color.Transparent else colorScheme.surface,
+    when (floatingBottomBarStyle) {
+        0 -> {
+            BlurredBar(
+                backdrop = blurBackdrop,
+                blurActive = bottomBlurActive,
+                progressiveSupported = false,
+                modifier = modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+            ) {
+                NavigationBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = if (bottomBlurActive) Color.Transparent else colorScheme.surface,
+                ) {
+                    items.forEachIndexed { index, item ->
+                        NavigationBarItem(
+                            modifier = Modifier.weight(1f),
+                            icon = destinations[index].icon(safeSelectedIndex == index),
+                            label = item.label,
+                            selected = safeSelectedIndex == index,
+                            onClick = { mainState.animateToPage(index) }
+                        )
+                    }
+                }
+            }
+        }
+
+        1 -> {
+            FloatingNavigationBar(
+                modifier = modifier.align(Alignment.BottomCenter),
             ) {
                 items.forEachIndexed { index, item ->
-                    NavigationBarItem(
-                        modifier = Modifier.weight(1f),
-                        icon = item.icon,
-                        label = item.label,
+                    FloatingNavigationBarItem(
                         selected = safeSelectedIndex == index,
-                        onClick = { mainState.animateToPage(index) }
+                        onClick = { mainState.animateToPage(index) },
+                        icon = destinations[index].icon(safeSelectedIndex == index),
+                        label = item.label,
                     )
                 }
             }
         }
-    } else {
-        val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
-            WindowInsets.captionBar.asPaddingValues().calculateBottomPadding() +
-            24.dp
 
-        FloatingBottomBar(
-            modifier = modifier
-                .align(Alignment.BottomCenter)
-                .pointerInput(Unit) {
-                    detectTapGestures { }
-                }
-                .padding(start = sideMargin, end = sideMargin, bottom = bottomPadding),
-            selectedIndex = safeSelectedIndex,
-            onSelected = { mainState.animateToPage(it) },
-            backdrop = backdrop,
-            tabsCount = items.size,
-            isBlurEnabled = enableFloatingBottomBarBlur || enableBlur,
-            liquidGlass = enableFloatingBottomBarBlur,
-        ) { activateTab ->
-            items.forEachIndexed { index, item ->
-                val destination = destinations[index]
-                FloatingBottomBarItem(
-                    selected = safeSelectedIndex == index,
-                    onClick = { activateTab(index) },
-                    modifier = Modifier.defaultMinSize(minWidth = itemMinWidth)
-                ) {
-                    Icon(
-                        imageVector = destination.icon,
-                        contentDescription = destination.label,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = destination.label,
-                        fontSize = 11.sp,
-                        lineHeight = 14.sp,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
+        else -> {
+            val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                WindowInsets.captionBar.asPaddingValues().calculateBottomPadding() +
+                24.dp
+
+            FloatingBottomBar(
+                modifier = modifier
+                    .align(Alignment.BottomCenter)
+                    .pointerInput(Unit) {
+                        detectTapGestures { }
+                    }
+                    .padding(start = sideMargin, end = sideMargin, bottom = bottomPadding),
+                selectedIndex = safeSelectedIndex,
+                onSelected = { mainState.animateToPage(it) },
+                backdrop = backdrop,
+                tabsCount = items.size,
+                isBlurEnabled = enableFloatingBottomBarBlur || enableBlur,
+                liquidGlass = enableFloatingBottomBarBlur,
+            ) { activateTab ->
+                items.forEachIndexed { index, item ->
+                    val destination = destinations[index]
+                    FloatingBottomBarItem(
+                        selected = safeSelectedIndex == index,
+                        onClick = { activateTab(index) },
+                        modifier = Modifier.defaultMinSize(minWidth = itemMinWidth)
+                    ) {
+                        Icon(
+                            imageVector = destination.icon(safeSelectedIndex == index),
+                            contentDescription = destination.label,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = destination.label,
+                            fontSize = 11.sp,
+                            lineHeight = 14.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }

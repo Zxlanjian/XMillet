@@ -27,10 +27,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
+import top.yukonga.miuix.kmp.icon.glass.ChevronForward
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 
 /**
@@ -77,7 +76,7 @@ fun FoldablePreferenceSection(
 ) {
     var expanded by rememberSaveable(title) { mutableStateOf(initiallyExpanded) }
     val arrowRotation by animateFloatAsState(
-        targetValue = if (expanded) 180f else 0f,
+        targetValue = if (expanded) 90f else 0f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
         label = "foldArrow",
     )
@@ -96,12 +95,12 @@ fun FoldablePreferenceSection(
         },
         endActions = {
             Icon(
-                imageVector = MiuixIcons.ExpandMore,
+                imageVector = MiuixIcons.Glass.ChevronForward,
                 contentDescription = if (expanded) "收起" else "展开",
                 tint = colorScheme.onSurfaceVariantSummary,
                 modifier = Modifier
                     .align(Alignment.CenterVertically)
-                    .size(20.dp)
+                    .size(18.dp)
                     .graphicsLayer { rotationZ = arrowRotation },
             )
         },
@@ -119,7 +118,6 @@ fun FoldablePreferenceSection(
         ) + fadeOut(spring(stiffness = Spring.StiffnessMedium)),
     ) {
         Column {
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
             content()
         }
     }

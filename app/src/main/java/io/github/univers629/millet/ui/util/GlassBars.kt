@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.LocalEnableProgressiveBlur
 import top.yukonga.miuix.kmp.basic.ScrollBehavior
 import top.yukonga.miuix.kmp.basic.Icon
@@ -67,7 +68,10 @@ fun MilletTopAppBar(
 ) {
     val backdrop = LocalBarBackdrop.current
     val progressive = LocalEnableProgressiveBlur.current && backdrop != null
+    val blurEnabled = LocalEnableBlur.current
     val band: Brush = when {
+        // 背景模糊关闭时顶栏保持纯白，不画渐变也不做任何模糊。
+        !blurEnabled -> SolidColor(MiuixTheme.colorScheme.surface)
         progressive -> GlassTopAppBarDefaults.bandBrush(MiuixTheme.colorScheme.surface)
         color == Color.Transparent -> SolidColor(Color.Transparent)
         color.isSpecified -> GlassTopAppBarDefaults.bandBrush(color)

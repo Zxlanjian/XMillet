@@ -570,7 +570,7 @@ fun SettingsContent(
                         )
                     }
 
-                    SmallTitle(text = "配置备份与恢复")
+                    SmallTitle(text = "关于")
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -592,15 +592,6 @@ fun SettingsContent(
                             summary = "备份、恢复、分享、导出或恢复默认配置",
                             onClick = { showConfigMenu = true }
                         )
-                    }
-
-                    SmallTitle(text = "关于")
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp)
-                    ) {
                         ArrowPreference(
                             startAction = {
                                 Icon(

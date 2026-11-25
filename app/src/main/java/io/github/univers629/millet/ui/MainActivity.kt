@@ -73,6 +73,7 @@ import io.github.univers629.millet.ui.screen.ProcessListRoute
 import io.github.univers629.millet.ui.screen.SettingsRoute
 import io.github.univers629.millet.ui.screen.ThemeSettingsScreenMiuix
 import io.github.univers629.millet.ui.screen.TombStatsScreenMiuix
+import io.github.univers629.millet.ui.theme.LocalFloatingBottomBarStyle
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.LocalEnableFloatingBottomBar
 import io.github.univers629.millet.ui.theme.LocalEnableFloatingBottomBarBlur
@@ -344,14 +345,13 @@ class MainActivity : ComponentActivity() {
         }
 
         val enableBlur = LocalEnableBlur.current
-        val enableFloatingBottomBar = LocalEnableFloatingBottomBar.current
-        val enableFloatingBottomBarBlur = LocalEnableFloatingBottomBarBlur.current
+        val floatingBottomBarStyle = LocalFloatingBottomBarStyle.current
         val surfaceColor = MiuixTheme.colorScheme.surface
 
         val bottomNavPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
                 WindowInsets.captionBar.asPaddingValues().calculateBottomPadding() +
-                if (enableFloatingBottomBar) 96.dp else 72.dp
+                if (floatingBottomBarStyle != 0) 96.dp else 72.dp
 
         val blurBackdrop = rememberBlurBackdrop(enableBlur)
         val backdrop = rememberLayerBackdrop {
@@ -468,7 +468,7 @@ class MainActivity : ComponentActivity() {
                                                 else Modifier
                                             )
                                             .then(
-                                                if (enableFloatingBottomBar && (enableFloatingBottomBarBlur || enableBlur)) {
+                                                if (floatingBottomBarStyle != 0 && (floatingBottomBarStyle == 2 || enableBlur)) {
                                                     Modifier.layerBackdrop(backdrop)
                                                 } else {
                                                     Modifier

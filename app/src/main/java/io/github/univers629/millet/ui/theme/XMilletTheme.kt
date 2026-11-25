@@ -54,6 +54,9 @@ val LocalColorMode = staticCompositionLocalOf { 0 }
 val LocalEnableBlur = compositionLocalOf { true }
 val LocalEnableFloatingBottomBar = compositionLocalOf { true }
 val LocalEnableFloatingBottomBarBlur = compositionLocalOf { true }
+
+/** 0 = 关闭，1 = Miuix 悬浮底栏，2 = iOS 液态玻璃。 */
+val LocalFloatingBottomBarStyle = compositionLocalOf { 1 }
 val LocalEnableProgressiveBlur = compositionLocalOf { true }
 
 @Composable
@@ -165,11 +168,21 @@ class UiThemeState(private val prefs: SharedPreferences) {
     var enableBlur by mutableStateOf(prefs.getBoolean(KEY_ENABLE_BLUR, true))
         private set
 
-    var enableFloatingBottomBar by mutableStateOf(prefs.getBoolean(KEY_FLOATING_BAR, true))
+    /** 悬浮底栏样式：0 = 关闭（经典底栏），1 = Miuix 悬浮底栏，2 = iOS 液态玻璃。 */
+    var floatingBottomBarStyle by mutableIntStateOf(
+        when {
+            !prefs.getBoolean(KEY_FLOATING_BAR, true) -> 0
+            prefs.getBoolean(KEY_FLOATING_BAR_BLUR, true) -> 2
+            else -> 1
+        }
+    )
         private set
 
-    var enableFloatingBottomBarBlur by mutableStateOf(prefs.getBoolean(KEY_FLOATING_BAR_BLUR, true))
-        private set
+    val enableFloatingBottomBar: Boolean
+        get() = floatingBottomBarStyle != 0
+
+    val enableFloatingBottomBarBlur: Boolean
+        get() = floatingBottomBarStyle == 2
 
     /** 是否让返回事件走系统的 OnBackInvoked 通道（关闭后退回传统 onBackPressed 通道）。 */
     var enablePredictiveBack by mutableStateOf(prefs.getBoolean(KEY_PREDICTIVE_BACK, false))
@@ -217,14 +230,13 @@ class UiThemeState(private val prefs: SharedPreferences) {
         prefs.edit().putBoolean(KEY_ENABLE_BLUR, enabled).apply()
     }
 
-    fun updateEnableFloatingBottomBar(enabled: Boolean) {
-        enableFloatingBottomBar = enabled
-        prefs.edit().putBoolean(KEY_FLOATING_BAR, enabled).apply()
-    }
-
-    fun updateEnableFloatingBottomBarBlur(enabled: Boolean) {
-        enableFloatingBottomBarBlur = enabled
-        prefs.edit().putBoolean(KEY_FLOATING_BAR_BLUR, enabled).apply()
+    fun updateFloatingBottomBarStyle(style: Int) {
+        val resolved = style.coerceIn(0, 2)
+        floatingBottomBarStyle = resolved
+        prefs.edit()
+            .putBoolean(KEY_FLOATING_BAR, resolved != 0)
+            .putBoolean(KEY_FLOATING_BAR_BLUR, resolved == 2)
+            .apply()
     }
 
     fun updateEnablePredictiveBack(enabled: Boolean) {
@@ -467,6 +479,7 @@ fun XMilletMiuixTheme(
             LocalEnableBlur provides themeState.enableBlur,
             LocalEnableFloatingBottomBar provides themeState.enableFloatingBottomBar,
             LocalEnableFloatingBottomBarBlur provides themeState.enableFloatingBottomBarBlur,
+            LocalFloatingBottomBarStyle provides themeState.floatingBottomBarStyle,
             LocalEnableProgressiveBlur provides themeState.enableProgressiveBlur,
         ) {
             content()

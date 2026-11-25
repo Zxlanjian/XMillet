@@ -1,5 +1,8 @@
 package io.github.univers629.millet.ui.screen
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.BarIconButton
@@ -17,6 +20,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,6 +30,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -207,7 +213,7 @@ fun ThemeSettingsScreenMiuix(
                             .padding(horizontal = 12.dp)
                             .padding(bottom = 12.dp)
                     ) {
-                        SwitchPreference(
+                        GlassDropdownPreference(
                             startAction = {
                                 Icon(
                                     imageVector = MiuixIcons.Glass.BottomSplitScreenOutline,
@@ -218,60 +224,13 @@ fun ThemeSettingsScreenMiuix(
                                     tint = colorScheme.onBackground
                                 )
                             },
-                            title = "启用悬浮底栏",
-                            summary = "使用胶囊式悬浮底栏（支持拖拽阻尼弹簧动画）",
-                            checked = themeState.enableFloatingBottomBar,
-                            onCheckedChange = { themeState.updateEnableFloatingBottomBar(it) }
-                        )
-
-                        GlassDropdownPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Wallpaper,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "背景模糊",
-                            summary = "高斯模糊为整块毛玻璃；渐进式模糊为顶栏边缘渐隐；无则仅保留顶栏渐变",
-                            items = listOf("关闭", "高斯模糊", "渐进式模糊"),
-                            selectedIndex = when {
-                                !themeState.enableBlur -> 0
-                                themeState.enableProgressiveBlur -> 2
-                                else -> 1
-                            },
-                            onSelectedIndexChange = { idx ->
-                                themeState.updateEnableBlur(idx != 0)
-                                if (idx != 0) themeState.updateEnableProgressiveBlur(idx == 2)
-                            },
+                            title = "悬浮底栏样式",
+                            summary = "Miuix 为组件库标准悬浮底栏；iOS 液态玻璃带透镜折射与高光",
+                            items = listOf("关闭", "Miuix", "iOS 液态玻璃"),
+                            selectedIndex = themeState.floatingBottomBarStyle,
+                            onSelectedIndexChange = { themeState.updateFloatingBottomBarStyle(it) },
                             backdrop = backdrop,
                         )
-
-                        AnimatedVisibility(
-                            visible = themeState.enableFloatingBottomBar,
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            SwitchPreference(
-                                startAction = {
-                                    Icon(
-                                        imageVector = MiuixIcons.Glass.CinematicEffect,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
-                                title = "启用悬浮底栏液态玻璃效果",
-                                summary = "开启边缘透镜折射、色散与重力倾角流光高光",
-                                checked = themeState.enableFloatingBottomBarBlur,
-                                onCheckedChange = { themeState.updateEnableFloatingBottomBarBlur(it) }
-                            )
-                        }
 
                         SwitchPreference(
                             startAction = {
@@ -290,21 +249,23 @@ fun ThemeSettingsScreenMiuix(
                             onCheckedChange = { themeState.updateShowTombStatsTab(it) }
                         )
 
-                        ArrowPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.ListView,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "墓碑统计显示板块",
-                            summary = "已显示 ${themeState.tombSections.size}/${TombSection.entries.size} 个板块",
-                            onClick = { showTombSections = true }
-                        )
+                        if (themeState.showTombStatsTab) {
+                            ArrowPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.ListView,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "墓碑统计显示板块",
+                                summary = "已显示 ${themeState.tombSections.size}/${TombSection.entries.size} 个板块",
+                                onClick = { showTombSections = true }
+                            )
+                        }
 
                         SwitchPreference(
                             startAction = {
@@ -608,33 +569,47 @@ private fun TombSectionPickerDialog(
     onDismissRequest: () -> Unit,
 ) {
     if (!show) return
-    OverlayDialog(
+    GlassBottomSheet(
+        backdrop = PopupBackdropHolder.current,
         show = true,
+        title = "墓碑统计显示板块",
+        insideMargin = DpSize(16.dp, 8.dp),
+        endAction = {
+            IconButton(onClick = onDismissRequest) {
+                Icon(
+                    imageVector = MiuixIcons.Close,
+                    contentDescription = "关闭",
+                    tint = colorScheme.onBackground,
+                )
+            }
+        },
         onDismissRequest = onDismissRequest,
-        insideMargin = DpSize(0.dp, 0.dp),
-        content = {
-            ProgressiveDialogLayout(
-                title = "墓碑统计显示板块",
-                maxBodyHeight = 500.dp,
-                headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
-                footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
-                footer = {
-                    TextButton(
-                        text = "完成",
-                        onClick = onDismissRequest,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(bottom = 12.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
             ) {
                 TombSection.entries.forEach { section ->
                     SwitchPreference(
                         title = section.label,
                         checked = section.id in selected,
                         onCheckedChange = { onToggle(section.id, it) },
-                        insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                     )
                 }
             }
+            TextButton(
+                text = "完成",
+                onClick = onDismissRequest,
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
         }
-    )
+    }
 }

@@ -79,6 +79,8 @@ import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -479,9 +481,9 @@ private fun StatusCardMiuix(
                     Icon(
                         modifier = Modifier.size(110.dp),
                         imageVector = if (isWorking) {
-                            MiuixIcons.Glass.Ok
+                            MiuixIcons.Ok
                         } else {
-                            MiuixIcons.Glass.Error
+                            MiuixIcons.Close
                         },
                         tint = when {
                             isWorking -> if (isDynamicColor) colorScheme.primary.copy(alpha = 0.8f) else Color(0xFF36D167)
