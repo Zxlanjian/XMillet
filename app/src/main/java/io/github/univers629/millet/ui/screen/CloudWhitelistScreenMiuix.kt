@@ -1,5 +1,6 @@
 package io.github.univers629.millet.ui.screen
 
+import io.github.univers629.millet.ui.util.BarIconButton
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -230,7 +231,7 @@ private fun CloudWhitelistContent(
             null
         },
         actions = {
-            IconButton(
+            BarIconButton(
                 onClick = onRefresh,
                 enabled = !isRefreshing
             ) {

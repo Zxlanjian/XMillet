@@ -1,4 +1,5 @@
 package io.github.univers629.millet.ui.screen
+import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
 import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
@@ -828,12 +829,25 @@ fun AboutRepoScreenMiuix(
     GlassDialog(backdrop = PopupBackdropHolder.current, 
         show = activeResId != null,
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
-        title = "感谢支持",
         onDismissRequest = { previewDonateResId = null },
         content = {
             DialogBackHandler { previewDonateResId = null }
             val dismissState = LocalDismissState.current
-            if (activeResId != null) {
+            if (activeResId != null) ProgressiveDialogLayout(
+                title = "感谢支持",
+                footerPadding = PaddingValues(top = 18.dp),
+                footer = {
+                    TextButton(
+                        text = "关闭",
+                        onClick = {
+                            previewDonateResId = null
+                            dismissState?.invoke()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColorsPrimary()
+                    )
+                },
+            ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
@@ -845,17 +859,6 @@ fun AboutRepoScreenMiuix(
                         modifier = Modifier.size(260.dp)
                     )
                 }
-                TextButton(
-                    text = "关闭",
-                    onClick = {
-                        previewDonateResId = null
-                        dismissState?.invoke()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 18.dp),
-                    colors = ButtonDefaults.textButtonColorsPrimary()
-                )
             }
         }
     )

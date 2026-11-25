@@ -1,5 +1,14 @@
 package io.github.univers629.millet.ui.screen.tombstats
 
+import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
+import top.yukonga.miuix.kmp.basic.InputField
+import kotlinx.coroutines.delay
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -76,7 +85,6 @@ import io.github.univers629.millet.ui.model.FreezeStatsSnapshot
 import io.github.univers629.millet.ui.model.RankMode
 import io.github.univers629.millet.ui.model.StatsRecentEvent
 import io.github.univers629.millet.ui.model.originLabel
-import io.github.univers629.millet.ui.screen.MiuixCapsuleSearchBar
 import io.github.univers629.millet.ui.theme.isInDarkTheme
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import java.text.SimpleDateFormat
@@ -648,8 +656,16 @@ private fun AppRankSection(
     val sorted = remember(baseSorted, hideSystemApps) {
         if (hideSystemApps) baseSorted.filter { !it.isSystem } else baseSorted
     }
-    val filtered = remember(sorted, searchQuery) {
-        val q = searchQuery.trim().lowercase()
+    // 收起搜索时立即按「无搜索」排版，查询词在收起动画结束后再清空，避免列表与搜索栏各跳一次
+    val activeQuery = if (searchVisible) searchQuery else ""
+    LaunchedEffect(searchVisible) {
+        if (!searchVisible && searchQuery.isNotEmpty()) {
+            delay(350)
+            searchQuery = ""
+        }
+    }
+    val filtered = remember(sorted, activeQuery) {
+        val q = activeQuery.trim().lowercase()
         if (q.isEmpty()) sorted
         else sorted.filter {
             it.label.lowercase().contains(q) ||
@@ -660,7 +676,7 @@ private fun AppRankSection(
     val maxValue = remember(sorted, mode) {
         sorted.maxOfOrNull { rankValue(it, mode) }?.coerceAtLeast(1f) ?: 1f
     }
-    val shown = if (expanded || searchQuery.isNotBlank()) filtered else filtered.take(10)
+    val shown = if (expanded || activeQuery.isNotBlank()) filtered else filtered.take(10)
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
@@ -724,45 +740,50 @@ private fun AppRankSection(
             }
             if (baseSorted.isNotEmpty()) {
                 IconButton(
-                    onClick = {
-                        if (searchVisible) {
-                            searchVisible = false
-                            searchQuery = ""
-                        } else {
-                            searchVisible = true
-                        }
-                    },
+                    onClick = { searchVisible = !searchVisible },
                     modifier = Modifier.size(36.dp),
                 ) {
-                    Icon(
-                        imageVector = if (searchVisible) MiuixIcons.Close else MiuixIcons.Basic.Search,
-                        contentDescription = if (searchVisible) "收起搜索" else "搜索应用排行",
-                        tint = if (searchVisible || searchQuery.isNotBlank()) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
-                        modifier = Modifier.size(20.dp),
-                    )
+                    Crossfade(targetState = searchVisible, animationSpec = tween(200), label = "rankSearchIcon") { open ->
+                        Icon(
+                            imageVector = if (open) MiuixIcons.Close else MiuixIcons.Basic.Search,
+                            contentDescription = if (open) "收起搜索" else "搜索应用排行",
+                            tint = if (open) colorScheme.primary else colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
             }
         }
 
         AnimatedVisibility(
-            visible = searchVisible || searchQuery.isNotBlank(),
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut() + shrinkVertically(),
+            visible = searchVisible,
+            enter = expandVertically(spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold), expandFrom = Alignment.Top) +
+                fadeIn(spring(stiffness = Spring.StiffnessMediumLow)),
+            exit = shrinkVertically(spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMedium, IntSize.VisibilityThreshold), shrinkTowards = Alignment.Top) +
+                fadeOut(spring(stiffness = Spring.StiffnessMedium)),
         ) {
-            MiuixCapsuleSearchBar(
+            // Miuix InputField：expanded 跟随搜索开关，收起时由组件自己清焦点、渐隐文字
+            InputField(
                 query = searchQuery,
                 onQueryChange = { searchQuery = it },
-                placeholder = "搜索应用名、包名或 UID...",
+                onSearch = { },
+                expanded = searchVisible,
+                onExpandedChange = { if (!it) searchVisible = false },
+                label = "搜索应用名、包名或 UID",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
             )
         }
 
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 12.dp)
+                .animateContentSize(spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold)),
         ) {
             if (shown.isEmpty()) {
-                if (searchQuery.isNotBlank()) {
+                if (activeQuery.isNotBlank()) {
                     BasicComponent(
                         title = "未找到匹配的应用",
                         summary = "点击清空搜索词",
@@ -781,7 +802,7 @@ private fun AppRankSection(
                     onClick = { onOpenDetail(app) },
                 )
             }
-            if (filtered.size > 10 && searchQuery.isBlank()) {
+            if (filtered.size > 10 && activeQuery.isBlank()) {
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
                 Row(
                     modifier = Modifier
@@ -1187,10 +1208,23 @@ internal fun MethodologyDialog(
     GlassDialog(
         backdrop = PopupBackdropHolder.current,
         show = show,
-        title = "这些数字怎么看",
         onDismissRequest = onDismiss,
     ) {
         val dismissState = LocalDismissState.current
+        ProgressiveDialogLayout(
+            title = "这些数字怎么看",
+            footer = {
+                TextButton(
+                    text = "知道了",
+                    onClick = {
+                        onDismiss()
+                        dismissState?.invoke()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColorsPrimary(),
+                )
+            },
+        ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -1219,16 +1253,7 @@ internal fun MethodologyDialog(
                 lineHeight = 19.sp,
                 color = colorScheme.onSurfaceVariantSummary,
             )
-            Spacer(Modifier.height(6.dp))
-            TextButton(
-                text = "知道了",
-                onClick = {
-                    onDismiss()
-                    dismissState?.invoke()
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColorsPrimary(),
-            )
+        }
         }
     }
 }

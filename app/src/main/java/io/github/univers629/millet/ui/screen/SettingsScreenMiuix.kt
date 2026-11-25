@@ -1,4 +1,6 @@
 package io.github.univers629.millet.ui.screen
+import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
+import io.github.univers629.millet.ui.component.FoldablePreferenceCard
 import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
@@ -369,14 +371,11 @@ fun SettingsContent(
                         )
                     }
 
-                    SmallTitle(
-                        text = "Millet 墓碑冻结全局策略"
-                    )
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp)
+                    SmallTitle(text = "全局策略")
+                    FoldablePreferenceCard(
+                        title = "Millet 墓碑冻结全局策略",
+                        summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
+                        icon = Icons.Rounded.CleaningServices,
                     ) {
                         SwitchPreference(
                             startAction = {
@@ -462,12 +461,10 @@ fun SettingsContent(
                         )
                     }
 
-                    SmallTitle(text = "Doze 深度睡眠策略")
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp)
+                    FoldablePreferenceCard(
+                        title = "Doze 深度睡眠策略",
+                        summary = "已开启 ${listOf(enableDoze, skipStateCheck, disableMotionListener).count { it }}/3 项",
+                        icon = Icons.Rounded.Bedtime,
                     ) {
                         SwitchPreference(
                             startAction = {
@@ -853,16 +850,18 @@ private fun SaveShareActionDialog(
         onDismissRequest = onDismissRequest,
         insideMargin = DpSize(0.dp, 0.dp),
         content = {
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 12.dp),
-                text = title,
-                fontSize = MiuixTheme.textStyles.title4.fontSize,
-                fontWeight = FontWeight.Medium,
-                textAlign = TextAlign.Center,
-                color = colorScheme.onSurface
-            )
+            ProgressiveDialogLayout(
+                title = title,
+                headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
+                footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
+                footer = {
+                    TextButton(
+                        text = "取消",
+                        onClick = onDismissRequest,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                },
+            ) {
             ArrowPreference(
                 title = saveTitle,
                 startAction = {
@@ -919,14 +918,7 @@ private fun SaveShareActionDialog(
                 },
                 insideMargin = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
             )
-            TextButton(
-                text = "取消",
-                onClick = onDismissRequest,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 24.dp)
-                    .padding(horizontal = 24.dp)
-            )
+            }
         }
     )
 }

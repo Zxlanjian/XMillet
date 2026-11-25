@@ -1,4 +1,5 @@
 package io.github.univers629.millet.ui.component
+import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
 import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import io.github.univers629.millet.ui.util.PopupBackdropHolder
@@ -90,10 +91,13 @@ fun AppUpdateDialogMiuix(
     GlassDialog(backdrop = PopupBackdropHolder.current, 
         show = show,
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
-        title = "发现新版本",
         onDismissRequest = onDismiss,
         content = {
             DialogBackHandler { onDismiss() }
+            ProgressiveDialogLayout(
+                title = "发现新版本",
+                footer = { UpdateDialogFooter(downloading != null, primaryLabel, onCancelDownload, onDismiss, onPrimaryAction, onIgnoreVersion, onOpenReleasePage) },
+            ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "v$currentVersionName → v${release.versionName}",
@@ -182,11 +186,26 @@ fun AppUpdateDialogMiuix(
                     )
                 }
 
+            }
+            }
+        },
+    )
+}
+
+@Composable
+private fun UpdateDialogFooter(
+    isDownloading: Boolean,
+    primaryLabel: String,
+    onCancelDownload: () -> Unit,
+    onDismiss: () -> Unit,
+    onPrimaryAction: () -> Unit,
+    onIgnoreVersion: () -> Unit,
+    onOpenReleasePage: () -> Unit,
+) {
+    val downloading: Any? = if (isDownloading) Unit else null
                 Row(
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     TextButton(
                         text = if (downloading != null) "取消" else "稍后再说",
@@ -234,7 +253,5 @@ fun AppUpdateDialogMiuix(
                         )
                     }
                 }
-            }
-        },
-    )
 }
+

@@ -205,21 +205,17 @@ fun MiuixConfirmDialog(
     GlassDialog(backdrop = PopupBackdropHolder.current, 
         show = show,
         modifier = Modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top)),
-        title = title,
         onDismissRequest = onDismiss,
         content = {
             DialogBackHandler { onDismiss() }
             val dismissState = LocalDismissState.current
-            Text(
-                text = message,
-                color = colorScheme.onSurfaceVariantSummary,
-                fontSize = 14.sp
-            )
+            ProgressiveDialogLayout(
+                title = title,
+                footerPadding = PaddingValues(top = 18.dp),
+                footer = {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 18.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 if (dismissText != null) {
                     TextButton(
@@ -240,6 +236,14 @@ fun MiuixConfirmDialog(
                     },
                     modifier = Modifier.weight(1f),
                     colors = ButtonDefaults.textButtonColorsPrimary()
+                )
+            }
+                },
+            ) {
+                Text(
+                    text = message,
+                    color = colorScheme.onSurfaceVariantSummary,
+                    fontSize = 14.sp
                 )
             }
         }

@@ -58,6 +58,7 @@ fun MilletTopAppBar(
     scrollBehavior: ScrollBehavior? = null,
     defaultWindowInsetsPadding: Boolean = true,
     bottomContent: @Composable () -> Unit = {},
+    buttonsAlwaysFloating: Boolean = true,
 ) {
     val backdrop = LocalBarBackdrop.current
     val progressive = LocalEnableProgressiveBlur.current && backdrop != null
@@ -67,8 +68,12 @@ fun MilletTopAppBar(
         color.isSpecified -> GlassTopAppBarDefaults.bandBrush(color)
         else -> GlassTopAppBarDefaults.bandBrush(MiuixTheme.colorScheme.surface)
     }
+    // 按钮常驻液态玻璃圆形：走 Miuix 的 isContentScrolled 重载。
+    // 默认重载只在内容滚到顶栏下方时才显示按钮玻璃底，静止时圆形会消失。
+    val scrolledFromBehavior = scrollBehavior?.state?.let { it.contentOffset < -1f || it.overscrollOffset < -1f } ?: true
     GlassTopAppBar(
         title = title,
+        isContentScrolled = buttonsAlwaysFloating || scrolledFromBehavior,
         modifier = modifier,
         expandable = expandable,
         progressiveBlur = progressive,

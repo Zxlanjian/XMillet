@@ -360,7 +360,7 @@ fun PolicyTemplatesContent(
         title = "策略模板",
         onBack = onBack,
         actions = {
-            IconButton(
+            BarIconButton(
                 onClick = { showEditor = true }
             ) {
                 Icon(

@@ -1,4 +1,8 @@
 package io.github.univers629.millet.ui.screen
+import androidx.compose.runtime.CompositionLocalProvider
+import io.github.univers629.millet.ui.util.LocalBarBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassIconButton
 import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.MilletSmallTopAppBar
 import io.github.univers629.millet.ui.util.BarIconButton
@@ -360,8 +364,11 @@ fun OobeScreenMiuix(
                             translationY = permTranslationY
                         }
                 ) {
+                    // 权限页背景录制给左上角液态玻璃按钮采样（Miuix GlassIconButton 需要 backdrop 才有折射玻璃）
+                    val permBackdrop = rememberLayerBackdrop()
                     Scaffold(
                         topBar = {
+                            CompositionLocalProvider(LocalBarBackdrop provides permBackdrop) {
                             MilletSmallTopAppBar(
                                 title = "",
                                 color = Color.Transparent,
@@ -381,12 +388,13 @@ fun OobeScreenMiuix(
                                     }
                                 },
                             )
+                            }
                         },
                     ) { innerPadding ->
                         BgEffectBackground(
                             dynamicBackground = true,
                             isOs3Effect = true,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().layerBackdrop(permBackdrop),
                             effectBackground = true,
                             isDarkTheme = false, // 严格保持浅色模式
                             alpha = { 1f },
@@ -675,8 +683,9 @@ private fun OobeStartupContent(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (isPreview) {
-                IconButton(
+                GlassIconButton(
                     onClick = onBack,
+                    backdrop = backdrop,
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(start = 12.dp, top = 8.dp)
