@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
@@ -79,5 +80,42 @@ object XMilletIcons {
                 close()
             }
         }.build()
+    }
+
+    /** 主页状态卡「工作中」：描边圆环 + 圆头对勾（还原原项目 110dp 大图标观感，非填充）。 */
+    val StatusOkOutline: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "StatusOkOutline",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).addPath(
+            pathData = addPathNodes(
+                "M16.29,7.88L10,14.17l-2.29,-2.29c-0.39,-0.39 -1.02,-0.39 -1.41,0 -0.39,0.39 -0.39,1.02 0,1.41l3,3c0.39,0.39 1.02,0.39 1.41,0L17.7,9.29c0.39,-0.39 0.39,-1.02 0,-1.41 -0.39,-0.39 -1.03,-0.39 -1.41,0z" +
+                    "M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" +
+                    "M12,20c-4.41,0 -8,-3.59 -8,-8s3.59,-8 8,-8 8,3.59 8,8 -3.59,8 -8,8z"
+            ),
+            fill = SolidColor(Color.Black),
+        ).build()
+    }
+
+    /** 主页状态卡「未激活」：描边圆环 + 感叹号（与 [StatusOkOutline] 同规格）。 */
+    val StatusErrorOutline: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "StatusErrorOutline",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f,
+        ).addPath(
+            pathData = addPathNodes(
+                "M12,7c0.55,0 1,0.45 1,1v4c0,0.55 -0.45,1 -1,1s-1,-0.45 -1,-1L11,8c0,-0.55 0.45,-1 1,-1z" +
+                    "M11.99,2C6.47,2 2,6.48 2,12s4.47,10 9.99,10C17.52,22 22,17.52 22,12S17.52,2 11.99,2z" +
+                    "M12,20c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8z" +
+                    "M13,17h-2v-2h2v2z"
+            ),
+            fill = SolidColor(Color.Black),
+        ).build()
     }
 }

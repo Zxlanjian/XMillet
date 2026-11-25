@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.PagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -35,14 +34,10 @@ import androidx.compose.ui.unit.sp
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.LocalEnableFloatingBottomBarBlur
 import io.github.univers629.millet.ui.theme.LocalFloatingBottomBarStyle
-import io.github.univers629.millet.ui.theme.isInDarkTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
-import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.NavigationBar
 import top.yukonga.miuix.kmp.basic.NavigationBarItem
@@ -53,6 +48,8 @@ import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
+import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.HomeFill
 import top.yukonga.miuix.kmp.icon.glass.HomeOutline
@@ -62,9 +59,6 @@ import top.yukonga.miuix.kmp.icon.glass.NotesFill
 import top.yukonga.miuix.kmp.icon.glass.NotesOutline
 import top.yukonga.miuix.kmp.icon.glass.SettingsFill
 import top.yukonga.miuix.kmp.icon.glass.SettingsOutline
-import top.yukonga.miuix.kmp.material.EdgeStroke
-import top.yukonga.miuix.kmp.material.EdgeStrokes
-import top.yukonga.miuix.kmp.material.edgeStroke
 import top.yukonga.miuix.kmp.material.isRuntimeShaderSupported
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.springAnimateToPage
@@ -165,7 +159,7 @@ enum class BottomBarDestination(
 /**
  * XMillet 底部导航栏（复刻 KernelSU BottomBarMiuix）：
  * - 悬浮模式：iOS 液态玻璃悬浮底栏 (FloatingBottomBar)，宽度随 Tab 数自适应；
- * - Miuix 悬浮模式：FloatingNavigationBar + 均匀毛玻璃 + EdgeStroke 描边（同 miuix example）；
+ * - Miuix 玻璃模式：GlassNavigationBar 液态玻璃悬浮底栏（同 miuix example 的 Glass 样式）；
  * - 经典模式：全宽 NavigationBar；开启背景模糊时整块 textureBlur(surface 0.8)，与 miuix example 一致。
  */
 @Composable
@@ -241,49 +235,29 @@ fun BoxScope.BottomBarMiuix(
         }
 
         1 -> {
-            val floatingBarColor = if (blurActive) Color.Transparent else colorScheme.surfaceContainer
-            val floatingBarShape = RoundedCornerShape(FloatingToolbarDefaults.CornerRadius)
-            val isDark = isInDarkTheme()
-            val floatingStroke: EdgeStroke = remember(isDark) {
-                if (isDark) EdgeStrokes.MiddleDark else EdgeStrokes.MiddleLight
+            // 同 miuix example 的 Glass 悬浮底栏：GlassNavigationBar 自带液态玻璃材质、描边、阴影与底部 insets
+            val glassItems = remember(destinations, safeSelectedIndex) {
+                destinations.mapIndexed { index, destination ->
+                    GlassNavigationItem(
+                        icon = destination.icon(safeSelectedIndex == index),
+                        label = destination.label,
+                    )
+                }
             }
-            // FloatingNavigationBar 自身处理底部 insets 与居中，外层 Box 只负责贴底
             Box(
                 modifier = modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
             ) {
-                FloatingNavigationBar(
-                    modifier = if (blurActive && blurBackdrop != null) {
-                        Modifier
-                            .textureBlur(
-                                backdrop = blurBackdrop,
-                                shape = floatingBarShape,
-                                blurRadius = 25f,
-                                colors = BlurDefaults.blurColors(
-                                    blendColors = listOf(
-                                        BlendColorEntry(color = colorScheme.surfaceContainer.copy(0.6f)),
-                                    ),
-                                ),
-                            )
-                            .edgeStroke(
-                                shape = floatingBarShape,
-                                stroke = floatingStroke,
-                            )
-                    } else {
-                        Modifier
-                    },
-                    color = floatingBarColor,
-                ) {
-                    destinations.forEachIndexed { index, destination ->
-                        FloatingNavigationBarItem(
-                            selected = safeSelectedIndex == index,
-                            onClick = { mainState.animateToPage(index) },
-                            icon = destination.icon(safeSelectedIndex == index),
-                            label = destination.label,
-                        )
-                    }
-                }
+                GlassNavigationBar(
+                    items = glassItems,
+                    selectedIndex = safeSelectedIndex,
+                    onSelect = { mainState.animateToPage(it) },
+                    backdrop = if (isRuntimeShaderSupported()) backdrop else null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                )
             }
         }
 

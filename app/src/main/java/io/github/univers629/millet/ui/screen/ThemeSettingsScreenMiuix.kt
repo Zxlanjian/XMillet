@@ -1,8 +1,5 @@
 package io.github.univers629.millet.ui.screen
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
-import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.BarIconButton
@@ -20,8 +17,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,8 +25,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Spacer
@@ -73,13 +66,12 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import io.github.univers629.millet.core.PredictiveBackController
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
+import io.github.univers629.millet.ui.component.FoldablePreferenceSection
 import io.github.univers629.millet.ui.model.TombSection
-import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.UiThemeState
 import io.github.univers629.millet.ui.theme.keyColorOptions
@@ -87,7 +79,6 @@ import io.github.univers629.millet.ui.theme.supportsPredictiveBack
 import io.github.univers629.millet.ui.util.BlurredBar
 import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -111,7 +102,6 @@ import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.icon.extended.Show
 import top.yukonga.miuix.kmp.icon.extended.Tune
-import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.ThemeColorSpec
@@ -144,7 +134,6 @@ fun ThemeSettingsScreenMiuix(
         val componentState = context.packageManager.getComponentEnabledSetting(launcherAlias)
         mutableStateOf(componentState != PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
     }
-    var showTombSections by remember { mutableStateOf(false) }
 
     val paletteStyles = ThemePaletteStyle.entries
     val paletteLabels = listOf(
@@ -225,8 +214,8 @@ fun ThemeSettingsScreenMiuix(
                                 )
                             },
                             title = "悬浮底栏样式",
-                            summary = "Miuix 为组件库标准悬浮底栏；iOS 液态玻璃带透镜折射与高光",
-                            items = listOf("关闭", "Miuix", "iOS 液态玻璃"),
+                            summary = "Miuix 玻璃为组件库 Glass 液态玻璃底栏；iOS 液态玻璃带透镜折射与高光",
+                            items = listOf("关闭", "Miuix 玻璃", "iOS 液态玻璃"),
                             selectedIndex = themeState.floatingBottomBarStyle,
                             onSelectedIndexChange = { themeState.updateFloatingBottomBarStyle(it) },
                             backdrop = backdrop,
@@ -276,21 +265,19 @@ fun ThemeSettingsScreenMiuix(
                         )
 
                         if (themeState.showTombStatsTab) {
-                            ArrowPreference(
-                                startAction = {
-                                    Icon(
-                                        imageVector = MiuixIcons.Glass.ListView,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .padding(end = 8.dp)
-                                            .size(24.dp),
-                                        tint = colorScheme.onBackground
-                                    )
-                                },
+                            FoldablePreferenceSection(
                                 title = "墓碑统计显示板块",
                                 summary = "已显示 ${themeState.tombSections.size}/${TombSection.entries.size} 个板块",
-                                onClick = { showTombSections = true }
-                            )
+                                icon = MiuixIcons.Glass.ListView,
+                            ) {
+                                TombSection.entries.forEach { section ->
+                                    SwitchPreference(
+                                        title = section.label,
+                                        checked = section.id in themeState.tombSections,
+                                        onCheckedChange = { themeState.updateTombSection(section.id, it) },
+                                    )
+                                }
+                            }
                         }
 
                         SwitchPreference(
@@ -490,13 +477,6 @@ fun ThemeSettingsScreenMiuix(
                     )
                 }
             }
-
-            TombSectionPickerDialog(
-                show = showTombSections,
-                selected = themeState.tombSections,
-                onToggle = themeState::updateTombSection,
-                onDismissRequest = { showTombSections = false },
-            )
         }
     }
 }
@@ -583,58 +563,6 @@ private fun ColorButtonMiuix(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TombSectionPickerDialog(
-    show: Boolean,
-    selected: Set<String>,
-    onToggle: (String, Boolean) -> Unit,
-    onDismissRequest: () -> Unit,
-) {
-    GlassBottomSheet(
-        backdrop = PopupBackdropHolder.current,
-        show = show,
-        title = "墓碑统计显示板块",
-        insideMargin = DpSize(16.dp, 8.dp),
-        endAction = {
-            IconButton(onClick = onDismissRequest) {
-                Icon(
-                    imageVector = MiuixIcons.Close,
-                    contentDescription = "关闭",
-                    tint = colorScheme.onBackground,
-                )
-            }
-        },
-        onDismissRequest = onDismissRequest,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(bottom = 12.dp),
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                TombSection.entries.forEach { section ->
-                    SwitchPreference(
-                        title = section.label,
-                        checked = section.id in selected,
-                        onCheckedChange = { onToggle(section.id, it) },
-                        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-                    )
-                }
-            }
-            TextButton(
-                text = "完成",
-                onClick = onDismissRequest,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            )
         }
     }
 }

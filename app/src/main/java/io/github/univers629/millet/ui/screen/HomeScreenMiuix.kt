@@ -93,9 +93,8 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.glass.CheckSelection
+import io.github.univers629.millet.ui.component.XMilletIcons
 import top.yukonga.miuix.kmp.icon.glass.CoolingFan
-import top.yukonga.miuix.kmp.icon.glass.Error
 import top.yukonga.miuix.kmp.icon.glass.Filter
 import top.yukonga.miuix.kmp.icon.glass.Ok
 import top.yukonga.miuix.kmp.icon.glass.Phone
@@ -484,9 +483,9 @@ private fun StatusCardMiuix(
                     Icon(
                         modifier = Modifier.size(110.dp),
                         imageVector = if (isWorking) {
-                            MiuixIcons.Glass.CheckSelection
+                            XMilletIcons.StatusOkOutline
                         } else {
-                            MiuixIcons.Glass.Error
+                            XMilletIcons.StatusErrorOutline
                         },
                         tint = when {
                             isWorking -> if (isDynamicColor) colorScheme.primary.copy(alpha = 0.8f) else Color(0xFF36D167)
