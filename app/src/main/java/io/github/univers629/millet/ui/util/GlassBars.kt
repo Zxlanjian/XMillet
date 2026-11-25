@@ -57,6 +57,7 @@ fun MilletTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: ScrollBehavior? = null,
     defaultWindowInsetsPadding: Boolean = true,
+    bottomContent: @Composable () -> Unit = {},
 ) {
     val backdrop = LocalBarBackdrop.current
     val progressive = LocalEnableProgressiveBlur.current && backdrop != null
@@ -79,6 +80,7 @@ fun MilletTopAppBar(
         defaultWindowInsetsPadding = defaultWindowInsetsPadding,
         navigationIcon = navigationIcon,
         actions = actions,
+        bottomContent = bottomContent,
     )
 }
 

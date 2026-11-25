@@ -129,6 +129,10 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.derivedStateOf
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 
 // ============================================================================================
 // 通用二级页骨架
@@ -144,9 +148,15 @@ internal fun PolicySubPageScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    bottomContent: (@Composable (backdrop: Backdrop, contentUnderTopBar: Boolean) -> Unit)? = null,
     content: LazyListScope.() -> Unit,
 ) {
     val scrollBehavior = MiuixScrollBehavior()
+    val subPageListState = rememberLazyListState()
+    val fallbackTabBackdrop = rememberLayerBackdrop()
+    val contentUnderTopBar by remember(subPageListState) {
+        derivedStateOf { subPageListState.canScrollBackward }
+    }
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
@@ -172,7 +182,10 @@ internal fun PolicySubPageScaffold(
                         }
                     },
                     actions = actions,
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
+                    bottomContent = {
+                        bottomContent?.invoke(backdrop ?: fallbackTabBackdrop, blurActive && contentUnderTopBar)
+                    },
                 )
             }
         },
@@ -180,6 +193,7 @@ internal fun PolicySubPageScaffold(
     ) { innerPadding ->
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             LazyColumn(
+                state = subPageListState,
                 modifier = Modifier
                     .fillMaxHeight()
                     .padding(top = 12.dp)

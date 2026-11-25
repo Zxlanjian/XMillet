@@ -63,17 +63,17 @@ import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
 import top.yukonga.miuix.kmp.basic.PullToRefresh
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
-import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.MoreCircle
 import top.yukonga.miuix.kmp.icon.extended.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
-import top.yukonga.miuix.kmp.theme.MiuixTheme.isDynamicColor
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import top.yukonga.miuix.kmp.utils.scrollEndHaptic
+import androidx.compose.runtime.derivedStateOf
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
 
 /**
  * 墓碑统计页入口：连接 [TombStatsViewModel] 与纯展示 [TombStatsContent]。
@@ -143,6 +143,10 @@ fun TombStatsContent(
     val barColor = if (blurActive) Color.Transparent else colorScheme.surface
     val pullToRefreshState = rememberPullToRefreshState()
     val listState = rememberLazyListState()
+    val fallbackTabBackdrop = rememberLayerBackdrop()
+    val contentUnderTopBar by remember(listState) {
+        derivedStateOf { listState.canScrollBackward }
+    }
 
     var showTopPopup by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
@@ -230,6 +234,19 @@ fun TombStatsContent(
                         )
                     },
                     scrollBehavior = scrollBehavior,
+                    bottomContent = {
+                        GlassSegmentedTabRow(
+                            tabs = StatsWindow.entries.map { it.label },
+                            selectedIndex = uiState.windowIndex,
+                            onSelect = onSelectWindow,
+                            backdrop = backdrop ?: fallbackTabBackdrop,
+                            surfaceAlpha = if (blurActive && contentUnderTopBar) 1f else 0f,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp)
+                                .padding(top = 6.dp, bottom = 12.dp),
+                        )
+                    },
                 )
             }
         },
@@ -257,27 +274,6 @@ fun TombStatsContent(
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     overscrollEffect = null,
                 ) {
-                    item(key = "window_tabs") {
-                        TabRowWithContour(
-                            tabs = StatsWindow.entries.map { it.label },
-                            selectedTabIndex = uiState.windowIndex,
-                            onTabSelected = onSelectWindow,
-                            colors = TabRowDefaults.tabRowColors(
-                                backgroundColor = colorScheme.surfaceContainer,
-                                contentColor = colorScheme.onSurfaceVariantSummary,
-                                selectedBackgroundColor = colorScheme.secondaryContainer,
-                                selectedContentColor = if (isDynamicColor) {
-                                    colorScheme.onSecondaryContainer
-                                } else {
-                                    colorScheme.onSurface
-                                },
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp),
-                        )
-                    }
-
                     when (effectiveState) {
                         StatsLoadState.Loading -> item(key = "state_loading") {
                             LoadingStateCard(active = uiState.isActive)
