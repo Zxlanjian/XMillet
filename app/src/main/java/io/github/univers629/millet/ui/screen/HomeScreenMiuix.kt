@@ -79,8 +79,6 @@ import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -95,6 +93,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.CheckSelection
 import top.yukonga.miuix.kmp.icon.glass.CoolingFan
 import top.yukonga.miuix.kmp.icon.glass.Error
 import top.yukonga.miuix.kmp.icon.glass.Filter
@@ -478,15 +477,16 @@ private fun StatusCardMiuix(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .offset(8.dp, 6.dp),
+                        // 还原原项目：右下角超出卡片裁切的 110dp 大号状态图标
+                        .offset(27.dp, 31.dp),
                     contentAlignment = Alignment.BottomEnd
                 ) {
                     Icon(
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(110.dp),
                         imageVector = if (isWorking) {
-                            MiuixIcons.Ok
+                            MiuixIcons.Glass.CheckSelection
                         } else {
-                            MiuixIcons.Close
+                            MiuixIcons.Glass.Error
                         },
                         tint = when {
                             isWorking -> if (isDynamicColor) colorScheme.primary.copy(alpha = 0.8f) else Color(0xFF36D167)

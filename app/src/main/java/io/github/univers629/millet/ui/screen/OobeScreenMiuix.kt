@@ -1,11 +1,7 @@
 package io.github.univers629.millet.ui.screen
-import androidx.compose.runtime.CompositionLocalProvider
-import io.github.univers629.millet.ui.util.LocalBarBackdrop
-import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import io.github.univers629.millet.ui.util.MilletTopAppBar
 import io.github.univers629.millet.ui.util.MilletSmallTopAppBar
-import io.github.univers629.millet.ui.util.BarIconButton
 
 import android.content.Context
 import android.content.Intent
@@ -363,30 +359,32 @@ fun OobeScreenMiuix(
                             translationY = permTranslationY
                         }
                 ) {
-                    // 权限页背景录制给左上角液态玻璃按钮采样（Miuix GlassIconButton 需要 backdrop 才有折射玻璃）
-                    val permBackdrop = rememberLayerBackdrop()
                     Scaffold(
                         topBar = {
-                            CompositionLocalProvider(LocalBarBackdrop provides permBackdrop) {
+                            // 权限向导顶栏：普通 Miuix IconButton，不使用圆形液态玻璃底
                             MilletSmallTopAppBar(
                                 title = "",
                                 color = Color.Transparent,
                                 titleColor = colorScheme.onSurface,
                                 navigationIcon = {
-                                    BarIconButton(
-                                        icon = MiuixIcons.Glass.Back,
-                                        contentDescription = "返回欢迎页",
+                                    IconButton(
                                         onClick = { currentStep = OobeStep.Startup },
-                                    )
+                                    ) {
+                                        Icon(
+                                            imageVector = MiuixIcons.Glass.Back,
+                                            contentDescription = "返回欢迎页",
+                                            tint = colorScheme.onSurface,
+                                            modifier = Modifier.size(28.dp),
+                                        )
+                                    }
                                 },
                             )
-                            }
                         },
                     ) { innerPadding ->
                         BgEffectBackground(
                             dynamicBackground = true,
                             isOs3Effect = true,
-                            modifier = Modifier.fillMaxSize().layerBackdrop(permBackdrop),
+                            modifier = Modifier.fillMaxSize(),
                             effectBackground = true,
                             isDarkTheme = false, // 严格保持浅色模式
                             alpha = { 1f },
