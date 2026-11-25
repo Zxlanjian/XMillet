@@ -609,7 +609,7 @@ private fun TombSectionPickerDialog(
         content = {
             ProgressiveDialogLayout(
                 title = "墓碑统计显示板块",
-                maxBodyHeight = 420.dp,
+                maxBodyHeight = 460.dp,
                 headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
                 footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
                 footer = {
