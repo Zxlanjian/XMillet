@@ -707,10 +707,11 @@ private fun SystemInfoCard(
         val abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"
         "$name ($abi)"
     }
+    // 未连接时没有任何可信的框架版本信息，写死具体数字会造成误导，直接说明状态
     val xposedStatus = if (runtimeStatus.binderAlive) {
         "libxposed API ${runtimeStatus.frameworkApiVersion}"
     } else {
-        "libxposed API 102 (Disconnected)"
+        "未连接"
     }
 
     Card(modifier = Modifier.fillMaxWidth()) {

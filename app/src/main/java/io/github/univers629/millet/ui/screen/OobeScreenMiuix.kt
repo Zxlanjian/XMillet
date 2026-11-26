@@ -241,6 +241,36 @@ fun OobeScreenMiuix(
         canReadApps = granted || AppListPermissionHelper.canReadInstalledApps(context)
     }
 
+    // 应用列表权限入口：系统支持时走运行时权限对话框，否则回退到本应用详情页手动授权
+    val requestAppListPermission: () -> Unit = {
+        if (AppListPermissionHelper.isSupported(context)) {
+            appListPermissionLauncher.launch(AppListPermissionHelper.PERMISSION)
+        } else {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            runCatching { context.startActivity(intent) }
+        }
+    }
+
+    // 打开 LSPosed 管理器并反馈结果：openModuleList 内部可能走 su，放到 IO 线程；Toast 回主线程弹出。
+    // 返回本页时靠 ON_RESUME 观察者重新刷新 isLspActive，这里不加轮询。
+    val openLspManager: () -> Unit = {
+        coroutineScope.launch {
+            val requested = withContext(Dispatchers.IO) { LsposedHelper.openManager(context) }
+            Toast.makeText(
+                context,
+                if (requested) {
+                    "已打开 LSPosed 管理器，请在模块列表中找到 XMillet 并启用（作用域：系统框架 + 电量与性能）"
+                } else {
+                    "未找到 LSPosed 管理器，请手动打开并启用 XMillet"
+                },
+                if (requested) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
     // 仅在进入权限配置页（Permissions）时才自动触发申请，避免在 Startup 入场动画期间弹窗打断体验
     LaunchedEffect(currentStep) {
         if (currentStep == OobeStep.Permissions) {
@@ -399,11 +429,18 @@ fun OobeScreenMiuix(
                                     .fillMaxSize()
                                     .widthIn(max = 640.dp)
                             ) {
+                                // 红 / 黄权限提示按钮（红优先）会再多占一行固定高度，
+                                // 内容区底部留白同步加高，避免提示按钮压住最后一张卡片
+                                val bottomHintCount = when {
+                                    !isLspActive -> 1
+                                    !canReadApps -> 1
+                                    else -> 0
+                                }
                                 val listContentPadding = PaddingValues(
                                     start = horizontalSafeInsets.calculateStartPadding(layoutDirection) + displayCutoutInsets.calculateLeftPadding(layoutDirection) + 12.dp,
                                     top = innerPadding.calculateTopPadding() + 8.dp,
                                     end = horizontalSafeInsets.calculateEndPadding(layoutDirection) + displayCutoutInsets.calculateRightPadding(layoutDirection) + 12.dp,
-                                    bottom = navBarPadding + 96.dp,
+                                    bottom = navBarPadding + 96.dp + 62.dp * bottomHintCount,
                                 )
 
                                 LazyColumn(
@@ -495,11 +532,7 @@ fun OobeScreenMiuix(
                                                     if (isLspActive) {
                                                         Toast.makeText(context, "LSPosed 模块已激活并握手成功", Toast.LENGTH_SHORT).show()
                                                     } else {
-                                                        coroutineScope.launch {
-                                                            withContext(Dispatchers.IO) {
-                                                                LsposedHelper.openModuleList(context)
-                                                            }
-                                                        }
+                                                        openLspManager()
                                                     }
                                                 }
                                             )
@@ -533,15 +566,7 @@ fun OobeScreenMiuix(
                                                     if (canReadApps) {
                                                         Toast.makeText(context, "已获得读取应用列表权限", Toast.LENGTH_SHORT).show()
                                                     } else {
-                                                        if (AppListPermissionHelper.isSupported(context)) {
-                                                            appListPermissionLauncher.launch(AppListPermissionHelper.PERMISSION)
-                                                        } else {
-                                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                                data = Uri.fromParts("package", context.packageName, null)
-                                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                                            }
-                                                            runCatching { context.startActivity(intent) }
-                                                        }
+                                                        requestAppListPermission()
                                                     }
                                                 }
                                             )
@@ -549,8 +574,8 @@ fun OobeScreenMiuix(
                                     }
                                 }
 
-                                // 3. 底部固定的“完成”主操作按钮
-                                Box(
+                                // 3. 底部固定区：权限缺失提示（红 / 黄，红优先）+ 主操作“完成”按钮
+                                Column(
                                     modifier = Modifier
                                         .align(Alignment.BottomCenter)
                                         .fillMaxWidth()
@@ -560,6 +585,24 @@ fun OobeScreenMiuix(
                                             bottom = navBarPadding + 16.dp
                                         )
                                 ) {
+                                    if (!isLspActive) {
+                                        OobePermissionWarningButton(
+                                            text = "没有获取到权限，应用将为未激活状态",
+                                            containerColor = Color(0xFFE23B2E),
+                                            contentColor = Color.White,
+                                            onClick = openLspManager,
+                                        )
+                                        Spacer(Modifier.height(10.dp))
+                                    } else if (!canReadApps) {
+                                        OobePermissionWarningButton(
+                                            text = "没有获取到应用列表权限，无法显示具体应用",
+                                            containerColor = Color(0xFFF2A93B),
+                                            contentColor = Color(0xFF3A2A00),
+                                            onClick = requestAppListPermission,
+                                        )
+                                        Spacer(Modifier.height(10.dp))
+                                    }
+
                                     Button(
                                         onClick = onComplete,
                                         modifier = Modifier
@@ -881,6 +924,43 @@ private fun OobeStartupContent(
                 Spacer(modifier = Modifier.weight(0.20f))
             }
         }
+    }
+}
+
+/**
+ * 权限缺失提示按钮（向导权限页底部）：与「完成」同宽同高。
+ * 红色 = 模块未激活 / 作用域未生效，点击去 LSPosed 管理器；黄色 = 应用列表权限缺失，点击重新授权。
+ * 高度固定 52dp 且允许两行文案，因此收窄 Miuix Button 默认的竖向内边距，避免文字被裁切。
+ */
+@Composable
+private fun OobePermissionWarningButton(
+    text: String,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit,
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        cornerRadius = 16.dp,
+        colors = ButtonDefaults.buttonColors(
+            color = containerColor,
+            contentColor = contentColor,
+        ),
+        insideMargin = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.fillMaxWidth(),
+            color = contentColor,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium,
+            lineHeight = 18.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+        )
     }
 }
 
