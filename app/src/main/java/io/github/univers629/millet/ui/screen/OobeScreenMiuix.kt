@@ -345,6 +345,11 @@ fun OobeScreenMiuix(
                 val permBackdrop = rememberBlurBackdrop(LocalEnableBlur.current)
                 val permScrollBehavior = MiuixScrollBehavior()
                 val permListState = rememberLazyListState()
+                // 这一页内容通常不足一屏，列表本身滚不动；此时「往上拖一下」就是页面唯一能提供的
+                // 内容重叠信号，所以浮起态 = 已滚过顶部 || 正在拖动，静止时仍然是纯图标。
+                val permContentScrolled = {
+                    permListState.canScrollBackward || permListState.isScrollInProgress
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -362,7 +367,7 @@ fun OobeScreenMiuix(
                                     color = Color.Transparent,
                                     titleColor = colorScheme.onSurface,
                                     scrollBehavior = permScrollBehavior,
-                                    contentScrolledSignal = { permListState.canScrollBackward },
+                                    contentScrolledSignal = permContentScrolled,
                                     navigationIcon = {
                                         BarIconButton(
                                             icon = MiuixIcons.Glass.Back,
@@ -377,8 +382,11 @@ fun OobeScreenMiuix(
                         BgEffectBackground(
                             dynamicBackground = true,
                             isOs3Effect = true,
-                            modifier = Modifier.fillMaxSize(),
-                            bgModifier = permBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
+                            // 采样源必须录在整页这一层：动态背景 + 列表 + 底部按钮。
+                            // 只录背景 Spacer 时顶栏的渐进模糊只能采到一层平滑渐变，看不到内容向下渐隐。
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .then(permBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier),
                             effectBackground = true,
                             isDarkTheme = false, // 严格保持浅色模式
                             alpha = { 1f },

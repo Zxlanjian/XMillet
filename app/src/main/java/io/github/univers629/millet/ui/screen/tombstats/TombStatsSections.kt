@@ -142,6 +142,41 @@ private val RankSearchProgressSpec: SpringSpec<Float> = spring(
 /** 搜索行（Miuix InputField）的固有高度，行高按进度比例裁切。 */
 private val RankSearchFieldHeight = 45.dp
 
+/** 搜索行与上方 Tab 栏、下方排行卡片之间的统一间距。 */
+private val RankSearchRowSpacing = 10.dp
+
+/** 搜索行连同它与下方卡片的间距：一起随进度收起，收起结束不会留下空隙。 */
+private val RankSearchRowTotalHeight = RankSearchFieldHeight + RankSearchRowSpacing
+
+/** 低于这个进度就当作完全收起：剩余高度不足 0.1dp，直接移出组合。 */
+internal const val RankSearchRowEpsilon = 0.002f
+
+/**
+ * 搜索行的高度 / 宽度比例。progress 归零（含动画尾部的极小值）时严格返回 0，
+ * 保证收起完成后这一行既不占位也不绘制。
+ */
+internal fun rankSearchRowFraction(progress: Float): Float = when {
+    progress.isNaN() || progress <= RankSearchRowEpsilon -> 0f
+    progress >= 1f -> 1f
+    else -> progress
+}
+
+/**
+ * 搜索行的整行透明度：前 [RankSearchFadeInFraction] 段完成淡入。
+ *
+ * 只裁高度的话，收起尾部会留下一条被裁白的输入框顶边（InputField 的 capsule 背景），
+ * 看起来就是「闪一条白边」；按同一进度淡出后，行高只剩几 px 时已经完全透明。
+ */
+internal fun rankSearchRowAlpha(progress: Float): Float =
+    (rankSearchRowFraction(progress) / RankSearchFadeInFraction).coerceIn(0f, 1f)
+
+/** 搜索行淡入淡出所占的进度区间。 */
+internal const val RankSearchFadeInFraction = 0.35f
+
+/** 搜索行的占位高度（含它与下方卡片的间距）；收起完成后严格为 0，这一行不占位。 */
+internal fun rankSearchRowHeight(progress: Float): Dp =
+    RankSearchRowTotalHeight * rankSearchRowFraction(progress)
+
 /** 排行模式 Tab 栏的几何参数。 */
 private val RankTabHeight = 42.dp
 private val RankTabPadding = 3.dp
@@ -388,9 +423,7 @@ private fun ScreenOffBanner(snap: FreezeStatsSnapshot) {
             Column(Modifier.weight(1f)) {
                 Text(
                     text = "息屏时系统解冻记录 ${formatCount(count)} 次",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = colorScheme.onSurface,
+                    style = rememberStatsHeadlineStyle(),
                 )
                 Text(
                     text = when {
@@ -644,16 +677,12 @@ private fun WakeReasonSection(wake: Map<WakeCategory, Int>) {
             ) {
                 Text(
                     text = "解冻记录 ${formatCount(total)} 次",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurfaceVariantSummary,
+                    style = rememberStatsHeadlineStyle(),
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "后台 ${formatCount(bgCount)} · 前台活动 ${formatCount(userCount)}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = colorScheme.onSurfaceVariantSummary,
+                    text = "后台活动 ${formatCount(bgCount)} 前台活动 ${formatCount(userCount)}",
+                    style = rememberStatsHeadlineStyle(),
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(1f),
                 )
@@ -685,8 +714,7 @@ private fun WakeReasonSection(wake: Map<WakeCategory, Int>) {
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = cat.label,
-                    fontSize = 14.sp,
-                    color = colorScheme.onSurface,
+                    style = rememberStatsHeadlineStyle(),
                     modifier = Modifier.weight(1f),
                 )
                 Text(
@@ -735,9 +763,7 @@ private fun TimeDistributionSection(
                     val suffix = if (buckets.size == 24) " 时" else ""
                     Text(
                         text = "$prefix${b.label}$suffix  共 ${formatCount(b.total)} 次",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colorScheme.onSurface,
+                        style = rememberStatsHeadlineStyle(),
                     )
                     Text(
                         text = "亮屏 ${formatCount(b.screenOnWakes)} · 息屏 ${formatCount(b.screenOffWakes)}",
@@ -941,7 +967,7 @@ private fun AppRankSection(
     }
     val shown = if (expanded || activeQuery.isNotBlank()) filtered else filtered.take(10)
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -987,12 +1013,16 @@ private fun AppRankSection(
             }
         }
 
+        Spacer(Modifier.height(RankSearchRowSpacing))
+
         RankModeTabRow(
             tabs = RankMode.entries.map { it.label },
             selectedIndex = modeIndex,
             onSelect = onModeIndexChange,
             modifier = Modifier.padding(horizontal = 12.dp),
         )
+
+        Spacer(Modifier.height(RankSearchRowSpacing))
 
         // 搜索行高度与输入框宽度共用同一个 progress，收起结束时行高为 0 才移出组合，因此不会跳变。
         RankSearchField(
@@ -1058,8 +1088,11 @@ private fun AppRankSection(
 }
 
 /**
- * 排行搜索行：行高 = [RankSearchFieldHeight] × progress，输入框宽度 = 可用宽度 × progress。
- * 两者共用同一个 progress，收起结束（progress ≈ 0）时才移出组合，因此收尾没有跳变。
+ * 排行搜索行：行高 = [RankSearchRowTotalHeight] × [rankSearchRowFraction]，
+ * 输入框宽度 = 可用宽度 × 同一比例，整行透明度按 [rankSearchRowAlpha] 收尾。
+ *
+ * 收起尾部只裁高度会残留一条被裁白的输入框顶边，所以最后一段同时把整行淡出；
+ * 高度里已经包含它与下方卡片的间距，比例归零后直接移出组合，这一行完全不留位。
  */
 @Composable
 private fun RankSearchField(
@@ -1068,13 +1101,16 @@ private fun RankSearchField(
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (progress <= 0.001f) return
-    val fraction = progress.coerceIn(0f, 1f)
+    val fraction = rankSearchRowFraction(progress)
+    if (fraction <= 0f) return
+    val rowAlpha = rankSearchRowAlpha(progress)
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(RankSearchFieldHeight * fraction)
+            .height(rankSearchRowHeight(progress))
+            .graphicsLayer { alpha = rowAlpha }
             .clipToBounds(),
+        contentAlignment = Alignment.TopStart,
     ) {
         // 输入框保持固有高度与展开态，由外层同时按比例裁切高度、收缩宽度。
         Box(
@@ -1166,8 +1202,8 @@ private fun RankModeTabRow(
                 ) {
                     Text(
                         text = label,
-                        fontSize = 13.sp,
-                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = StatsHeadlineFontSize,
+                        fontWeight = StatsHeadlineFontWeight,
                         color = if (selected) colorScheme.onBackground else colorScheme.onSurfaceVariantSummary,
                         textAlign = TextAlign.Center,
                         maxLines = 1,

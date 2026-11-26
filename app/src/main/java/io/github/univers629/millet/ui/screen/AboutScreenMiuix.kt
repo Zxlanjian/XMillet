@@ -127,6 +127,10 @@ fun AboutScreenMiuix(
     // 关于页的流光同样受统一模糊开关控制：关闭模糊时 Logo、标题与卡片回退为纯色。
     // 动态背景光效本身不是模糊，仍按页面自身效果保留。
     val backdrop = rememberBlurBackdrop(LocalEnableBlur.current)
+    // 顶栏另用一层采样源：它必须录到整页内容（动态背景 + Logo + 列表），
+    // 否则渐进模糊只有一层平滑渐变可采，看起来就像「高透明度高斯模糊」而不是顶部实、向下渐隐。
+    // Logo 与卡片的 textureBlur 仍采样 [backdrop]（只含背景），避免它们把自己录进去形成反馈。
+    val barBackdrop = rememberBlurBackdrop(LocalEnableBlur.current)
 
     val context = LocalContext.current
     val versionLabel = remember(context) {
@@ -158,6 +162,13 @@ fun AboutScreenMiuix(
         }
     }
     val scrollProgress by scrollProgressState
+    // 顶栏整页采样源的开关：只有头部开始收起（顶栏真正会显形）时才录整页，
+    // 避免静态首屏白白多付一层离屏渲染。
+    val recordBarBackdrop by remember {
+        derivedStateOf {
+            scrollProgressState.value > 0f || lazyListState.canScrollBackward
+        }
+    }
     // 三段错峰窗口：版本号 5%→20%、标题 20%→35%、图标 35%→50% 依次收起。
     // 只在 graphicsLayer 的绘制阶段读取（不要提前求值），否则每滚动一像素都会触发重组。
     fun collapseProgress(start: Float): Float =
@@ -199,13 +210,13 @@ fun AboutScreenMiuix(
             // 与设置/应用策略等子页共用同一套 BlurredBar + 玻璃按钮实现：
             // 开启渐进式模糊时顶栏自顶部向下渐隐模糊，返回键在页面滚过顶部后才浮起圆形液态玻璃；
             // 高斯模糊档位由 BlurredBar 叠整块毛玻璃；关闭模糊时回退为纯色（未滚动仍保持透明）。
-            BlurredBar(backdrop, blurActive = backdrop != null && scrollProgress >= 1f) {
+            // 背景带完全交给库自己的滚动遮罩（maskProgress）控制显隐，
+            // 不再额外乘一层「滚动进度」，否则头部收起期间会把实底带乘没，只剩一层很淡的高斯雾。
+            BlurredBar(barBackdrop, blurActive = barBackdrop != null && scrollProgress >= 1f) {
                 MilletSmallTopAppBar(
                     title = "关于",
                     scrollBehavior = topAppBarScrollBehavior,
                     contentScrolledSignal = { lazyListState.canScrollBackward },
-                    // 背景带随滚动进度淡入：头部图案收起的同时顶栏才逐渐成形，与原有观感一致。
-                    backgroundAlpha = { scrollProgress },
                     color = when {
                         scrollProgress < 1f -> colorScheme.surface.copy(alpha = 0f)
                         LocalEnableBlur.current -> Color.Transparent
@@ -240,7 +251,17 @@ fun AboutScreenMiuix(
         BgEffectBackground(
             dynamicBackground = true,
             isOs3Effect = true,
-            modifier = Modifier.fillMaxSize(),
+            // 两层采样源：背景 Spacer 录制 [backdrop]（供 Logo / 卡片的 textureBlur 自采样）；
+            // 整页这一层录制 [barBackdrop]，只给顶栏的渐进模糊用，能采到 Logo 与列表内容的渐隐。
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (recordBarBackdrop && barBackdrop != null) {
+                        Modifier.layerBackdrop(barBackdrop)
+                    } else {
+                        Modifier
+                    },
+                ),
             bgModifier = backdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
             effectBackground = true,
             isFullSize = false,
@@ -617,6 +638,9 @@ fun AboutKnowledgeScreenMiuix(
             state = lazyListState,
             modifier = Modifier
                 .fillMaxSize()
+                // 采样源挂在列表上（与设置 / 应用策略子页一致）：滚动时行内容才会进到顶栏的
+                // 渐进模糊里，否则 backdrop 录不到任何东西，顶栏永远是空的。
+                .then(backdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier)
                 .scrollEndHaptic()
                 .overScrollVertical()
                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
@@ -713,6 +737,8 @@ fun AboutRepoScreenMiuix(
             state = repoListState,
             modifier = Modifier
                 .fillMaxSize()
+                // 同上：采样源必须挂在列表上，顶栏才采得到滚动内容。
+                .then(backdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier)
                 .scrollEndHaptic()
                 .overScrollVertical()
                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
@@ -978,6 +1004,8 @@ fun AboutLicensesScreenMiuix(
             state = licensesListState,
             modifier = Modifier
                 .fillMaxSize()
+                // 同上：采样源必须挂在列表上，顶栏才采得到滚动内容。
+                .then(backdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier)
                 .scrollEndHaptic()
                 .overScrollVertical()
                 .nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
