@@ -11,6 +11,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.tween
@@ -45,6 +47,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -101,7 +104,6 @@ import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
@@ -114,9 +116,8 @@ import top.yukonga.miuix.kmp.icon.glass.Filter
 import top.yukonga.miuix.kmp.icon.glass.QuietMode
 import top.yukonga.miuix.kmp.icon.basic.Search
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.ExpandLess
-import top.yukonga.miuix.kmp.icon.extended.ExpandMore
 import top.yukonga.miuix.kmp.icon.extended.Filter
+import top.yukonga.miuix.kmp.icon.glass.ChevronForward
 import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.squircle.squircleBackground
 import top.yukonga.miuix.kmp.squircle.squircleClip
@@ -603,14 +604,27 @@ private fun DozeAttributionCard(
             }
 
             if (summary.recentSessions.isNotEmpty()) {
-                HorizontalDivider()
+                // 展开 / 收起只靠 chevron 旋转表达状态，箭头与文字整体居中，不再占满左右两端。
+                val sessionArrowRotation by animateFloatAsState(
+                    targetValue = if (showSessions) 90f else 0f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+                    label = "dozeSessionArrow",
+                )
+                val sessionRowInteraction = remember { MutableInteractionSource() }
+                // 整行做成一块可点击的灰底：按压指示与背景铺满整行，不再只罩住文字附近。
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showSessions = !showSessions }
-                        .padding(vertical = 2.dp),
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(colorScheme.surfaceContainerHighest)
+                        .clickable(
+                            interactionSource = sessionRowInteraction,
+                            indication = ripple(),
+                            role = Role.Button,
+                        ) { showSessions = !showSessions }
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
                         text = if (showSessions) "收起最近待机分段" else "最近待机分段 (${summary.recentSessions.size})",
@@ -618,14 +632,28 @@ private fun DozeAttributionCard(
                         fontWeight = FontWeight.Medium,
                         color = colorScheme.primary,
                     )
+                    Spacer(Modifier.width(6.dp))
                     Icon(
-                        imageVector = if (showSessions) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                        contentDescription = null,
-                        tint = colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
+                        imageVector = MiuixIcons.Glass.ChevronForward,
+                        contentDescription = if (showSessions) "收起最近待机分段" else "展开最近待机分段",
+                        tint = colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .graphicsLayer { rotationZ = sessionArrowRotation },
                     )
                 }
-                AnimatedVisibility(visible = showSessions) {
+                // 高度伸缩同样走 spring（与折叠卡片一致），展开与收起都不再出现一帧跳变。
+                AnimatedVisibility(
+                    visible = showSessions,
+                    enter = expandVertically(
+                        animationSpec = spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold),
+                        expandFrom = Alignment.Top,
+                    ),
+                    exit = shrinkVertically(
+                        animationSpec = spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold),
+                        shrinkTowards = Alignment.Top,
+                    ),
+                ) {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         summary.recentSessions.take(6).forEach { s ->
                             val batText = when {
@@ -1059,7 +1087,11 @@ private fun AppRankSection(
                 )
             }
             if (filtered.size > 10 && activeQuery.isBlank()) {
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 14.dp))
+                val moreArrowRotation by animateFloatAsState(
+                    targetValue = if (expanded) 90f else 0f,
+                    animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
+                    label = "rankMoreArrow",
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1074,12 +1106,14 @@ private fun AppRankSection(
                         fontWeight = FontWeight.Medium,
                         color = colorScheme.primary,
                     )
-                    Spacer(Modifier.width(4.dp))
+                    Spacer(Modifier.width(6.dp))
                     Icon(
-                        imageVector = if (expanded) MiuixIcons.ExpandLess else MiuixIcons.ExpandMore,
-                        contentDescription = null,
-                        tint = colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
+                        imageVector = MiuixIcons.Glass.ChevronForward,
+                        contentDescription = if (expanded) "收起" else "查看全部",
+                        tint = colorScheme.onSurfaceVariantSummary,
+                        modifier = Modifier
+                            .size(16.dp)
+                            .graphicsLayer { rotationZ = moreArrowRotation },
                     )
                 }
             }
