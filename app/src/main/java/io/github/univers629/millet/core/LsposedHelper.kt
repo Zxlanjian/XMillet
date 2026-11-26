@@ -16,9 +16,6 @@ object LsposedHelper {
 
     private const val SECRET_CODE = "android_secret_code://5776733"
 
-    /** 独立管理器机型的包名；寄生管理器机型（如本机 LSPosed 2.2.1）查不到这个包。 */
-    private const val LSPOSED_MANAGER_PACKAGE = "org.lsposed.manager"
-
     private const val ACTION_SECRET_CODE_TELEPHONY = "android.telephony.action.SECRET_CODE"
 
     private val secretCodeAction: String
@@ -47,30 +44,10 @@ object LsposedHelper {
     }
 
     /**
-     * 打开 LSPosed 管理器（模块列表所在界面）。
-     *
-     * 独立管理器机型（[LSPOSED_MANAGER_PACKAGE] 是普通应用、有启动入口）直接起 MainActivity；
-     * 寄生管理器机型查不到这个包，回退到 [openModuleList] 的密钥码广播。管理器 manifest 里没有
-     * 按包名直达模块页的 deep link，因此两种情况都只能停在管理器的模块列表。
-     *
-     * @return true 表示已成功发出打开请求
-     */
-    fun openManager(context: Context): Boolean {
-        val launchedStandalone = runCatching {
-            val launchIntent = context.packageManager
-                .getLaunchIntentForPackage(LSPOSED_MANAGER_PACKAGE)
-                ?: return@runCatching false
-            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            context.startActivity(launchIntent)
-            true
-        }.getOrDefault(false)
-        if (launchedStandalone) return true
-
-        return runCatching { openModuleList(context) }.getOrDefault(false)
-    }
-
-    /**
      * 拉起 LSPosed 寄生管理器的模块列表页。
+     *
+     * LSPosed 管理器只提供密钥码广播这一个入口（寄生管理器没有独立 APK 的启动 Activity），
+     * 管理器 manifest 里也没有按包名直达模块页的 deep link，因此只能停在管理器的模块列表。
      *
      * @return true 表示已发出触发请求；框架未安装时系统不会给出可判定结果，因此不做存在性断言
      */

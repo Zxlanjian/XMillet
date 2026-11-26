@@ -258,7 +258,7 @@ fun OobeScreenMiuix(
     // 返回本页时靠 ON_RESUME 观察者重新刷新 isLspActive，这里不加轮询。
     val openLspManager: () -> Unit = {
         coroutineScope.launch {
-            val requested = withContext(Dispatchers.IO) { LsposedHelper.openManager(context) }
+            val requested = withContext(Dispatchers.IO) { LsposedHelper.openModuleList(context) }
             Toast.makeText(
                 context,
                 if (requested) {
