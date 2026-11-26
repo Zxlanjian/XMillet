@@ -11,6 +11,8 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.SpringSpec
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
@@ -118,6 +120,21 @@ import top.yukonga.miuix.kmp.squircle.squircleBorder
 import top.yukonga.miuix.kmp.squircle.squircleClip
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+
+/**
+ * 「应用排行」搜索框收放统一使用的动画曲线：搜索栏的展开/收起、搜索图标的交替，
+ * 以及下方排行卡片的内容高度都走同一条 spring，收尾时不会出现两条曲线相撞的顿挫。
+ */
+private val RankSearchSizeSpec: SpringSpec<IntSize> = spring(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow,
+    visibilityThreshold = IntSize.VisibilityThreshold,
+)
+
+private val RankSearchFloatSpec: SpringSpec<Float> = spring(
+    dampingRatio = Spring.DampingRatioNoBouncy,
+    stiffness = Spring.StiffnessMediumLow,
+)
 
 @Composable
 private fun WakeCategory.displayColor(): Color {
@@ -405,8 +422,8 @@ private fun DozeAttributionCard(
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "暂无深度待机归因数据",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurface,
                 )
                 Text(
@@ -624,14 +641,18 @@ private fun WakeReasonSection(wake: Map<WakeCategory, Int>) {
             ) {
                 Text(
                     text = "解冻记录 ${formatCount(total)} 次",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurfaceVariantSummary,
                 )
+                Spacer(Modifier.width(8.dp))
                 Text(
                     text = "后台 ${formatCount(bgCount)} · 前台活动 ${formatCount(userCount)}",
-                    fontSize = 12.sp,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
                     color = colorScheme.onSurfaceVariantSummary,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1f),
                 )
             }
             Spacer(Modifier.height(10.dp))
@@ -711,8 +732,8 @@ private fun TimeDistributionSection(
                     val suffix = if (buckets.size == 24) " 时" else ""
                     Text(
                         text = "$prefix${b.label}$suffix  共 ${formatCount(b.total)} 次",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
                         color = colorScheme.onSurface,
                     )
                     Text(
@@ -819,8 +840,14 @@ private fun InterventionSection(snap: FreezeStatsSnapshot) {
             rules.forEach { (rule, n) ->
                 Column {
                     Row(Modifier.fillMaxWidth()) {
-                        Text(rule.label, fontSize = 14.sp, color = colorScheme.onSurface, modifier = Modifier.weight(1f))
-                        Text(formatCount(n), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = colorScheme.onSurface)
+                        Text(
+                            rule.label,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(formatCount(n), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colorScheme.onSurface)
                     }
                     Spacer(Modifier.height(4.dp))
                     ProgressLine(fraction = n.toFloat() / maxRule, color = colorScheme.primary)
@@ -881,11 +908,19 @@ private fun AppRankSection(
     val sorted = remember(baseSorted, hideSystemApps) {
         if (hideSystemApps) baseSorted.filter { !it.isSystem } else baseSorted
     }
-    // 收起搜索时立即恢复列表并清空查询词，整个收起过程只发生一次布局变化，
-    // 避免动画结束后的第二次重组造成收尾卡顿。
-    val activeQuery = if (searchVisible) searchQuery else ""
+    // 搜索框收放动画：AnimatedVisibility 用它自己的过渡状态，收起结束后 isIdle 变 true，
+    // 此时才清空查询词并把列表恢复成完整排行——避免动画进行到一半时行内容突然替换，
+    // 导致卡片高度动画与内容变化错位（收尾的顿挫感）。
+    val searchAnimState = remember { MutableTransitionState(searchVisible) }
     LaunchedEffect(searchVisible) {
-        if (!searchVisible && searchQuery.isNotEmpty()) {
+        if (searchAnimState.targetState != searchVisible) {
+            searchAnimState.targetState = searchVisible
+        }
+    }
+    val searchSettledCollapsed = !searchVisible && searchAnimState.isIdle && !searchAnimState.currentState
+    val activeQuery = if (searchSettledCollapsed) "" else searchQuery
+    LaunchedEffect(searchSettledCollapsed) {
+        if (searchSettledCollapsed && searchQuery.isNotEmpty()) {
             searchQuery = ""
         }
     }
@@ -938,7 +973,7 @@ private fun AppRankSection(
                     },
                     modifier = Modifier.size(36.dp),
                 ) {
-                    Crossfade(targetState = searchVisible, animationSpec = tween(200), label = "rankSearchIcon") { open ->
+                    Crossfade(targetState = searchVisible, animationSpec = RankSearchFloatSpec, label = "rankSearchIcon") { open ->
                         Icon(
                             imageVector = if (open) MiuixIcons.Close else MiuixIcons.Basic.Search,
                             contentDescription = if (open) "收起搜索" else "搜索应用排行",
@@ -958,9 +993,9 @@ private fun AppRankSection(
         )
 
         AnimatedVisibility(
-            visible = searchVisible,
-            enter = expandVertically(spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold), expandFrom = Alignment.Top),
-            exit = shrinkVertically(spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMedium, IntSize.VisibilityThreshold), shrinkTowards = Alignment.Top),
+            visibleState = searchAnimState,
+            enter = expandVertically(RankSearchSizeSpec, expandFrom = Alignment.Top),
+            exit = shrinkVertically(RankSearchSizeSpec, shrinkTowards = Alignment.Top),
             modifier = Modifier.clipToBounds(),
         ) {
             // expanded 固定为 true：输入框只在展开时组合，收起过程交给上层的裁切动画，
@@ -982,7 +1017,7 @@ private fun AppRankSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
-                .animateContentSize(spring(Spring.DampingRatioNoBouncy, Spring.StiffnessMediumLow, IntSize.VisibilityThreshold)),
+                .animateContentSize(RankSearchSizeSpec),
         ) {
             if (shown.isEmpty()) {
                 if (activeQuery.isNotBlank()) {

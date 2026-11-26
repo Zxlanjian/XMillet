@@ -252,7 +252,8 @@ fun BoxScope.BottomBarMiuix(
                     items = glassItems,
                     selectedIndex = safeSelectedIndex,
                     onSelect = { mainState.animateToPage(it) },
-                    backdrop = if (isRuntimeShaderSupported()) backdrop else null,
+                    // 统一模糊开关：关闭背景模糊时不再采样背景，玻璃底栏回退为纯色底
+                    backdrop = if (enableBlur && isRuntimeShaderSupported()) backdrop else null,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 24.dp),
@@ -276,8 +277,8 @@ fun BoxScope.BottomBarMiuix(
                 onSelected = { mainState.animateToPage(it) },
                 backdrop = backdrop,
                 tabsCount = items.size,
-                isBlurEnabled = enableFloatingBottomBarBlur || enableBlur,
-                liquidGlass = enableFloatingBottomBarBlur,
+                isBlurEnabled = enableBlur && isRuntimeShaderSupported(),
+                liquidGlass = enableFloatingBottomBarBlur && enableBlur,
             ) { activateTab ->
                 items.forEachIndexed { index, item ->
                     val destination = destinations[index]

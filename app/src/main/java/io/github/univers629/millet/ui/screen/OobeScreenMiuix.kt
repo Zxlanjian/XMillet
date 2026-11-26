@@ -1,5 +1,4 @@
 package io.github.univers629.millet.ui.screen
-import top.yukonga.miuix.kmp.glass.GlassIconButton
 import io.github.univers629.millet.ui.util.MilletSmallTopAppBar
 
 import android.content.Intent
@@ -89,6 +88,7 @@ import io.github.univers629.millet.core.LsposedHelper
 import io.github.univers629.millet.ui.component.StatusTagMiuix
 import io.github.univers629.millet.ui.component.effect.BgEffectBackground
 import io.github.univers629.millet.ui.component.effect.GlowBackground
+import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import kotlin.math.hypot
 import kotlinx.coroutines.Dispatchers
@@ -167,7 +167,7 @@ private class CircleRevealShape(
  * - 深度学研 HyperCeiler provision 模块现代动画与流光设计；
  * - 开场展示 OKLab 色彩空间计算的 Simplex 噪声与开场环形扩散光效（GlowBackground / glow.glsl）；
  * - 第一页的 Logo 图标、应用大标题 XMillet，以及底部的「下一步」右箭头按钮，统一使用「关于」页同款毛玻璃（textureBlur + logoBlend）效果；
- * - 强制常开毛玻璃渲染（不随设置项中的毛玻璃开关改变）；
+ * - 毛玻璃跟随「外观个性化 → 背景模糊」档位：关闭时回退为纯色文字与不透明按钮，左上角返回按钮始终是普通图标按钮；
  * - Logo 缩放入场动画（0.5 -> 0.95 -> 1.0）+ 标题平移渐显 + 底部 70dp 圆形下一步按钮（带延时入场）；
  * - 下一步按钮点击后播放向外扩张平滑衔接动画过渡至权限配置向导页；
  * - 权限配置页遵循规范：盾牌图标、大标题与副标题均不使用 textureBlur；
@@ -186,7 +186,8 @@ fun OobeScreenMiuix(
     val layoutDirection = LocalLayoutDirection.current
     val colorScheme = MiuixTheme.colorScheme
     val isDark = colorScheme.surface.luminance() < 0.5f
-    val startupBackdrop = rememberBlurBackdrop(true)
+    // 统一模糊开关：OOBE 的流光玻璃同样受「背景模糊」档位控制，关闭时回退为纯色/纯字。
+    val startupBackdrop = rememberBlurBackdrop(LocalEnableBlur.current)
 
     var currentStep by rememberSaveable { mutableStateOf(OobeStep.Startup) }
     var isTransitioning by remember { mutableStateOf(false) }
@@ -657,9 +658,9 @@ private fun OobeStartupContent(
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (isPreview) {
-                GlassIconButton(
+                // 左上角返回按钮与普通页面顶栏导航图标一致：纯图标按钮，不再套圆形液态玻璃底。
+                IconButton(
                     onClick = onBack,
-                    backdrop = backdrop,
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(start = 12.dp, top = 8.dp)

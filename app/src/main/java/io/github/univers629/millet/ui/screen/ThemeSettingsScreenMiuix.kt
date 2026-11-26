@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import io.github.univers629.millet.core.PredictiveBackController
 import io.github.univers629.millet.ui.component.FoldablePreferenceSection
 import io.github.univers629.millet.ui.model.TombSection
+import io.github.univers629.millet.ui.theme.BlurMode
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.theme.UiThemeState
 import io.github.univers629.millet.ui.theme.keyColorOptions
@@ -89,7 +90,7 @@ import top.yukonga.miuix.kmp.icon.glass.ChevronBackward
 import top.yukonga.miuix.kmp.icon.glass.BottomSplitScreenOutline
 import top.yukonga.miuix.kmp.icon.glass.Album
 import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
-import top.yukonga.miuix.kmp.icon.glass.GesturePassword
+import top.yukonga.miuix.kmp.icon.glass.Reset
 import top.yukonga.miuix.kmp.icon.glass.Theme
 import top.yukonga.miuix.kmp.icon.glass.Wallpaper
 import top.yukonga.miuix.kmp.icon.basic.Check
@@ -226,16 +227,11 @@ fun ThemeSettingsScreenMiuix(
                                 )
                             },
                             title = "背景模糊",
-                            summary = "高斯模糊为整块毛玻璃；渐进式模糊为顶栏边缘渐隐；关闭后顶栏为纯白",
+                            summary = "统一控制顶栏、底栏、弹窗与卡片玻璃：关闭后全部回退为纯色，高斯为整块毛玻璃，渐进为顶栏边缘渐隐",
                             items = listOf("关闭", "高斯模糊", "渐进式模糊"),
-                            selectedIndex = when {
-                                !themeState.enableBlur -> 0
-                                themeState.enableProgressiveBlur -> 2
-                                else -> 1
-                            },
+                            selectedIndex = themeState.blurMode.preferenceIndex,
                             onSelectedIndexChange = { idx ->
-                                themeState.updateEnableBlur(idx != 0)
-                                if (idx != 0) themeState.updateEnableProgressiveBlur(idx == 2)
+                                themeState.updateBlurMode(BlurMode.fromPreferenceIndex(idx))
                             },
                             backdrop = backdrop,
                         )
@@ -338,7 +334,7 @@ fun ThemeSettingsScreenMiuix(
                         SwitchPreference(
                             startAction = {
                                 Icon(
-                                    imageVector = MiuixIcons.Glass.GesturePassword,
+                                    imageVector = MiuixIcons.Glass.Reset,
                                     contentDescription = null,
                                     modifier = Modifier
                                         .padding(end = 8.dp)

@@ -70,6 +70,7 @@ import io.github.univers629.millet.R
 import io.github.univers629.millet.ui.component.DialogBackHandler
 import io.github.univers629.millet.ui.component.StatusTagMiuix
 import io.github.univers629.millet.ui.component.effect.BgEffectBackground
+import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.util.AboutPhoneUtils
 import io.github.univers629.millet.ui.util.milletMiuixBlurEffect
 import io.github.univers629.millet.ui.util.rememberBlurBackdrop
@@ -123,9 +124,9 @@ fun AboutScreenMiuix(
     val layoutDirection = LocalLayoutDirection.current
     val density = LocalDensity.current
     val isDark = colorScheme.surface.luminance() < 0.5f
-    // 关于页流光不依赖“顶栏/底栏毛玻璃”设置：参照 InstallerX/HyperCeiler，
-    // 关于页的动态背景与图标透传是页面自身效果，仅受系统能力（RenderEffect）限制。
-    val backdrop = rememberBlurBackdrop(true)
+    // 关于页的流光同样受统一模糊开关控制：关闭模糊时 Logo、标题与卡片回退为纯色。
+    // 动态背景光效本身不是模糊，仍按页面自身效果保留。
+    val backdrop = rememberBlurBackdrop(LocalEnableBlur.current)
 
     val context = LocalContext.current
     val versionLabel = remember(context) {

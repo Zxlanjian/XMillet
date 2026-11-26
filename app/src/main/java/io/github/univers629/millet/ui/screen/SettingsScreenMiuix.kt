@@ -62,6 +62,7 @@ import io.github.univers629.millet.ui.util.AppUpdateController
 import io.github.univers629.millet.ui.util.AppUpdateStatus
 import io.github.univers629.millet.ui.util.BlurredBar
 import io.github.univers629.millet.ui.util.BugreportHelper
+import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import io.github.univers629.millet.ui.vm.SettingsUiState
 import io.github.univers629.millet.ui.vm.SettingsViewModel
@@ -91,7 +92,8 @@ import top.yukonga.miuix.kmp.icon.glass.MultiSplitScreen
 import top.yukonga.miuix.kmp.icon.glass.LockOutline
 import top.yukonga.miuix.kmp.icon.glass.JumpNext
 import top.yukonga.miuix.kmp.icon.glass.HapticIntensity
-import top.yukonga.miuix.kmp.icon.glass.AccessControl
+import top.yukonga.miuix.kmp.icon.glass.NoSunProtectionNeeded
+import top.yukonga.miuix.kmp.icon.glass.NotesOutline
 import top.yukonga.miuix.kmp.icon.glass.Battery100
 import top.yukonga.miuix.kmp.icon.glass.DisplayBrightness
 import top.yukonga.miuix.kmp.icon.glass.QuietMode
@@ -105,9 +107,9 @@ import top.yukonga.miuix.kmp.icon.extended.Info
 import top.yukonga.miuix.kmp.icon.glass.Backup
 import top.yukonga.miuix.kmp.icon.glass.Download
 import top.yukonga.miuix.kmp.icon.glass.Import
-import top.yukonga.miuix.kmp.icon.glass.Log
 import top.yukonga.miuix.kmp.icon.glass.Reset
 import top.yukonga.miuix.kmp.icon.extended.Reset
+import top.yukonga.miuix.kmp.glass.GlassDialog
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -349,7 +351,7 @@ fun SettingsContent(
                         FoldablePreferenceSection(
                             title = "Millet 墓碑冻结全局策略",
                             summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
-                            icon = MiuixIcons.Glass.AccessControl,
+                            icon = MiuixIcons.Glass.NoSunProtectionNeeded,
                         ) {
                         SwitchPreference(
                             startAction = {
@@ -494,7 +496,7 @@ fun SettingsContent(
                     FoldablePreferenceCard(
                         title = "运行日志与诊断",
                         summary = "已开启 ${listOf(isLog, simplifyLog).count { it }}/2 项",
-                        icon = MiuixIcons.Glass.Log,
+                        icon = MiuixIcons.Glass.NotesOutline,
                     ) {
                         SwitchPreference(
                             startAction = {
@@ -822,15 +824,26 @@ private fun SaveShareActionDialog(
         }
     }
 
-    OverlayDialog(
-        show = show,
+    // 与「运行环境与服务」底部面板同一套模糊实现：GlassDialog 采样全局弹窗背景源，
+    // 关闭背景模糊时 PopupBackdropHolder 为 null，自动回退为不透明底色。
+    val glassBackdrop = PopupBackdropHolder.current
+    val maskColor = if (glassBackdrop != null) {
+        colorScheme.background.copy(alpha = 0.72f)
+    } else {
+        colorScheme.background
+    }
+
+    GlassDialog(
         onDismissRequest = onDismissRequest,
+        show = show,
+        backdrop = glassBackdrop,
         insideMargin = DpSize(0.dp, 0.dp),
         content = {
             ProgressiveDialogLayout(
                 title = title,
                 headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
                 footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
+                surfaceColor = maskColor,
                 footer = {
                     TextButton(
                         text = "取消",
@@ -910,9 +923,18 @@ private fun ConfigActionsDialog(
     onExport: () -> Unit,
     onReset: () -> Unit,
 ) {
-    OverlayDialog(
-        show = show,
+    // 与「运行环境与服务」底部面板同一套模糊实现（GlassDialog + 全局弹窗背景采样源）。
+    val glassBackdrop = PopupBackdropHolder.current
+    val maskColor = if (glassBackdrop != null) {
+        colorScheme.background.copy(alpha = 0.72f)
+    } else {
+        colorScheme.background
+    }
+
+    GlassDialog(
         onDismissRequest = onDismissRequest,
+        show = show,
+        backdrop = glassBackdrop,
         insideMargin = DpSize(0.dp, 0.dp),
         content = {
             ProgressiveDialogLayout(
@@ -920,6 +942,7 @@ private fun ConfigActionsDialog(
                 maxBodyHeight = 420.dp,
                 headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
                 footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
+                surfaceColor = maskColor,
                 footer = {
                     TextButton(
                         text = "取消",
