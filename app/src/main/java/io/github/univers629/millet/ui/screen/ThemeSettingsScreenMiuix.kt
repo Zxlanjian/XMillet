@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -111,6 +112,7 @@ fun ThemeSettingsScreenMiuix(
 ) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
+    val pageListState = rememberLazyListState()
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
@@ -155,6 +157,7 @@ fun ThemeSettingsScreenMiuix(
                     color = barColor,
                     title = "外观个性化",
                     scrollBehavior = scrollBehavior,
+                    contentScrolledSignal = { pageListState.canScrollBackward },
                     navigationIcon = {
                         BarIconButton(onClick = onBack) {
                             val layoutDirection = LocalLayoutDirection.current
@@ -177,6 +180,7 @@ fun ThemeSettingsScreenMiuix(
     ) { innerPadding ->
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             LazyColumn(
+                state = pageListState,
                 modifier = Modifier
                     .fillMaxHeight()
                     .scrollEndHaptic()

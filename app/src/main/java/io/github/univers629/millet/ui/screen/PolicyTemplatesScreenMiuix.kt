@@ -177,6 +177,7 @@ internal fun PolicySubPageScaffold(
                     },
                     actions = actions,
                     scrollBehavior = scrollBehavior,
+                    contentScrolledSignal = { subPageListState.canScrollBackward },
                     bottomContent = {
                         bottomContent?.invoke(backdrop ?: fallbackTabBackdrop, blurActive && contentUnderTopBar)
                     },

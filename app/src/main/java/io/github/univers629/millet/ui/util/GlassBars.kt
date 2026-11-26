@@ -65,6 +65,17 @@ fun MilletTopAppBar(
     scrollBehavior: ScrollBehavior? = null,
     defaultWindowInsetsPadding: Boolean = true,
     bottomContent: @Composable () -> Unit = {},
+    /**
+     * 内容是否已滑到顶栏下方的额外信号（推荐传 `listState.canScrollBackward`）。
+     *
+     * miuix 的官方建议就是用列表的 `canScrollBackward` 表示顶栏按钮的浮起态；只看
+     * [ScrollBehavior] 的 `contentOffset`／`overscrollOffset` 时，这两个值是以 px 计的累计量，
+     * 系统「最小宽度 / DPI」改变后 density 随之变化，轻量滚动可能凑不满原先写死的 1px 阈值
+     * （位移还会被 overscroll / PullToRefresh 吸收），于是圆形液态玻璃再也不浮起。
+     */
+    contentScrolledSignal: (() -> Boolean)? = null,
+    /** 顶栏背景带（含渐进模糊）的整体不透明度，用于让「仅在滚动后出现」的页面按滚动进度淡入。 */
+    backgroundAlpha: (() -> Float)? = null,
 ) {
     val backdrop = LocalBarBackdrop.current
     val progressive = LocalEnableProgressiveBlur.current && backdrop != null
@@ -79,9 +90,11 @@ fun MilletTopAppBar(
     }
     // 与 Miuix 一致：只有内容下滑到顶栏下方、且顶栏走渐进式模糊时，按钮才浮起圆形液态玻璃。
     // 关闭模糊或只用整块毛玻璃时保持纯图标，同时不再让顶栏采样按钮背景。
-    val contentScrolled = scrollBehavior?.state?.let {
-        it.contentOffset < -1f || it.overscrollOffset < -1f
-    } ?: false
+    // 判定统一用「列表已滚过顶部」（density / 窗口宽度无关）+ 滚动偏移兜底，不再依赖 px 阈值。
+    val scrollState = scrollBehavior?.state
+    val listScrolled = contentScrolledSignal?.invoke() ?: false
+    val contentScrolled = listScrolled ||
+        (scrollState != null && (scrollState.contentOffset < 0f || scrollState.overscrollOffset < 0f))
     GlassTopAppBar(
         title = title,
         isContentScrolled = progressive && contentScrolled,
@@ -106,6 +119,7 @@ fun MilletTopAppBar(
                 actions()
             }
         },
+        backgroundAlpha = backgroundAlpha ?: { 1f },
         bottomContent = bottomContent,
     )
 }
@@ -125,6 +139,8 @@ fun MilletSmallTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: ScrollBehavior? = null,
     defaultWindowInsetsPadding: Boolean = true,
+    contentScrolledSignal: (() -> Boolean)? = null,
+    backgroundAlpha: (() -> Float)? = null,
 ) = MilletTopAppBar(
     title = title,
     modifier = modifier,
@@ -136,6 +152,8 @@ fun MilletSmallTopAppBar(
     actions = actions,
     scrollBehavior = scrollBehavior,
     defaultWindowInsetsPadding = defaultWindowInsetsPadding,
+    contentScrolledSignal = contentScrolledSignal,
+    backgroundAlpha = backgroundAlpha,
 )
 
 /** 顶栏按钮与紧随其后的菜单之间共享的 Miuix 锚点（首次组合时按调用顺序配对）。 */

@@ -1,5 +1,7 @@
 package io.github.univers629.millet.ui.screen
 import io.github.univers629.millet.ui.util.MilletSmallTopAppBar
+import io.github.univers629.millet.ui.util.BlurredBar
+import io.github.univers629.millet.ui.util.BarIconButton
 
 import android.content.Intent
 import android.net.Uri
@@ -37,6 +39,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -65,6 +68,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.findRootCoordinates
@@ -120,6 +124,7 @@ import top.yukonga.miuix.kmp.icon.glass.Widget
 import top.yukonga.miuix.kmp.icon.basic.Check
 import top.yukonga.miuix.kmp.icon.glass.Back
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -335,6 +340,11 @@ fun OobeScreenMiuix(
             val permLightColors = remember { lightColorScheme() }
             MiuixTheme(colors = permLightColors) {
                 val colorScheme = permLightColors
+                // 权限页与设置/应用策略子页同一套顶栏实现：页面背景作为采样源，
+                // 顶栏走渐进式模糊，返回键在列表滚过顶部后才浮起圆形液态玻璃。
+                val permBackdrop = rememberBlurBackdrop(LocalEnableBlur.current)
+                val permScrollBehavior = MiuixScrollBehavior()
+                val permListState = rememberLazyListState()
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -346,30 +356,29 @@ fun OobeScreenMiuix(
                 ) {
                     Scaffold(
                         topBar = {
-                            // 权限向导顶栏：普通 Miuix IconButton，不使用圆形液态玻璃底
-                            MilletSmallTopAppBar(
-                                title = "",
-                                color = Color.Transparent,
-                                titleColor = colorScheme.onSurface,
-                                navigationIcon = {
-                                    IconButton(
-                                        onClick = { currentStep = OobeStep.Startup },
-                                    ) {
-                                        Icon(
-                                            imageVector = MiuixIcons.Glass.Back,
+                            BlurredBar(permBackdrop, blurActive = permBackdrop != null) {
+                                MilletSmallTopAppBar(
+                                    title = "",
+                                    color = Color.Transparent,
+                                    titleColor = colorScheme.onSurface,
+                                    scrollBehavior = permScrollBehavior,
+                                    contentScrolledSignal = { permListState.canScrollBackward },
+                                    navigationIcon = {
+                                        BarIconButton(
+                                            icon = MiuixIcons.Glass.Back,
                                             contentDescription = "返回欢迎页",
-                                            tint = colorScheme.onSurface,
-                                            modifier = Modifier.size(28.dp),
+                                            onClick = { currentStep = OobeStep.Startup },
                                         )
-                                    }
-                                },
-                            )
+                                    },
+                                )
+                            }
                         },
                     ) { innerPadding ->
                         BgEffectBackground(
                             dynamicBackground = true,
                             isOs3Effect = true,
                             modifier = Modifier.fillMaxSize(),
+                            bgModifier = permBackdrop?.let { Modifier.layerBackdrop(it) } ?: Modifier,
                             effectBackground = true,
                             isDarkTheme = false, // 严格保持浅色模式
                             alpha = { 1f },
@@ -391,10 +400,12 @@ fun OobeScreenMiuix(
                                 )
 
                                 LazyColumn(
+                                    state = permListState,
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .scrollEndHaptic()
-                                        .overScrollVertical(),
+                                        .overScrollVertical()
+                                        .nestedScroll(permScrollBehavior.nestedScrollConnection),
                                     contentPadding = listContentPadding,
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {

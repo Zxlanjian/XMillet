@@ -226,6 +226,7 @@ fun TombStatsContent(
                         )
                     },
                     scrollBehavior = scrollBehavior,
+                    contentScrolledSignal = { listState.canScrollBackward },
                     bottomContent = {
                         GlassSegmentedTabRow(
                             tabs = StatsWindow.entries.map { it.label },

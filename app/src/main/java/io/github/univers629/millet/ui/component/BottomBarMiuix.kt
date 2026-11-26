@@ -137,7 +137,8 @@ enum class BottomBarDestination(
 ) {
     Home("主页", MiuixIcons.Glass.HomeOutline, MiuixIcons.Glass.HomeFill),
     Processes("进程列表", MiuixIcons.Glass.NotesOutline, MiuixIcons.Glass.NotesFill),
-    TombStats("墓碑统计", MiuixIcons.Glass.DigitalStatistics, MiuixIcons.Glass.DigitalStatistics),
+    // DigitalStatistics 没有 Fill 变体，选中态改用同一图标的 Demibold 字重变体（其余 Tab 沿用 Outline/Fill）。
+    TombStats("墓碑统计", MiuixIcons.Glass.DigitalStatistics, MiuixIcons.Glass.Demibold.DigitalStatistics),
     Settings("设置", MiuixIcons.Glass.SettingsOutline, MiuixIcons.Glass.SettingsFill);
 
     fun icon(selected: Boolean): ImageVector = if (selected) iconFill else iconOutline

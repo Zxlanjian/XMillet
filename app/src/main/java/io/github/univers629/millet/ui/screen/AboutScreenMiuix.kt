@@ -2,6 +2,7 @@ package io.github.univers629.millet.ui.screen
 import io.github.univers629.millet.ui.component.ProgressiveDialogLayout
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import io.github.univers629.millet.ui.util.MilletSmallTopAppBar
+import io.github.univers629.millet.ui.util.BlurredBar
 import io.github.univers629.millet.ui.util.BarIconButton
 
 import android.content.Context
@@ -72,7 +73,6 @@ import io.github.univers629.millet.ui.component.StatusTagMiuix
 import io.github.univers629.millet.ui.component.effect.BgEffectBackground
 import io.github.univers629.millet.ui.theme.LocalEnableBlur
 import io.github.univers629.millet.ui.util.AboutPhoneUtils
-import io.github.univers629.millet.ui.util.milletMiuixBlurEffect
 import io.github.univers629.millet.ui.util.rememberBlurBackdrop
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -196,28 +196,32 @@ fun AboutScreenMiuix(
 
     Scaffold(
         topBar = {
-            MilletSmallTopAppBar(
-                modifier = Modifier.milletMiuixBlurEffect(
-                    backdrop = backdrop,
-                    enabled = scrollProgress == 1f,
-                ),
-                title = "关于",
-                scrollBehavior = topAppBarScrollBehavior,
-                color = if (backdrop != null && scrollProgress == 1f) {
-                    Color.Transparent
-                } else {
-                    colorScheme.surface.copy(alpha = if (scrollProgress == 1f) 1f else 0f)
-                },
-                titleColor = colorScheme.onSurface.copy(alpha = scrollProgress),
-                defaultWindowInsetsPadding = false,
-                navigationIcon = {
-                    BarIconButton(
-                        icon = MiuixIcons.Glass.Back,
-                        contentDescription = "返回",
-                        onClick = onBack,
-                    )
-                },
-            )
+            // 与设置/应用策略等子页共用同一套 BlurredBar + 玻璃按钮实现：
+            // 开启渐进式模糊时顶栏自顶部向下渐隐模糊，返回键在页面滚过顶部后才浮起圆形液态玻璃；
+            // 高斯模糊档位由 BlurredBar 叠整块毛玻璃；关闭模糊时回退为纯色（未滚动仍保持透明）。
+            BlurredBar(backdrop, blurActive = backdrop != null && scrollProgress >= 1f) {
+                MilletSmallTopAppBar(
+                    title = "关于",
+                    scrollBehavior = topAppBarScrollBehavior,
+                    contentScrolledSignal = { lazyListState.canScrollBackward },
+                    // 背景带随滚动进度淡入：头部图案收起的同时顶栏才逐渐成形，与原有观感一致。
+                    backgroundAlpha = { scrollProgress },
+                    color = when {
+                        scrollProgress < 1f -> colorScheme.surface.copy(alpha = 0f)
+                        LocalEnableBlur.current -> Color.Transparent
+                        else -> colorScheme.surface
+                    },
+                    titleColor = colorScheme.onSurface.copy(alpha = scrollProgress),
+                    defaultWindowInsetsPadding = false,
+                    navigationIcon = {
+                        BarIconButton(
+                            icon = MiuixIcons.Glass.Back,
+                            contentDescription = "返回",
+                            onClick = onBack,
+                        )
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         val listContentPadding = PaddingValues(
@@ -555,6 +559,7 @@ fun AboutKnowledgeScreenMiuix(
 ) {
     val topAppBarScrollBehavior = MiuixScrollBehavior()
     val lazyListState = rememberLazyListState()
+    val backdrop = rememberBlurBackdrop(LocalEnableBlur.current)
 
     // 严格按 1 -> 3 -> 5 -> 2 -> 6 -> 4 排序
     val knowledgeList = listOf(
@@ -592,17 +597,20 @@ fun AboutKnowledgeScreenMiuix(
 
     Scaffold(
         topBar = {
-            MilletSmallTopAppBar(
-                title = "墓碑与冻结机制解析",
-                scrollBehavior = topAppBarScrollBehavior,
-                navigationIcon = {
-                    BarIconButton(
-                        icon = MiuixIcons.Glass.Back,
-                        contentDescription = "返回",
-                        onClick = onBack,
-                    )
-                },
-            )
+            BlurredBar(backdrop, blurActive = backdrop != null) {
+                MilletSmallTopAppBar(
+                    title = "墓碑与冻结机制解析",
+                    scrollBehavior = topAppBarScrollBehavior,
+                    contentScrolledSignal = { lazyListState.canScrollBackward },
+                    navigationIcon = {
+                        BarIconButton(
+                            icon = MiuixIcons.Glass.Back,
+                            contentDescription = "返回",
+                            onClick = onBack,
+                        )
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         LazyColumn(
@@ -675,6 +683,8 @@ fun AboutRepoScreenMiuix(
 ) {
     val context = LocalContext.current
     val topAppBarScrollBehavior = MiuixScrollBehavior()
+    val repoListState = rememberLazyListState()
+    val backdrop = rememberBlurBackdrop(LocalEnableBlur.current)
     val repoUrl = "https://github.com/univers629/XMillet"
     val donateQrResIds = remember {
         listOf(R.drawable.qr_donate_alipay, R.drawable.qr_donate_wechat)
@@ -683,20 +693,24 @@ fun AboutRepoScreenMiuix(
 
     Scaffold(
         topBar = {
-            MilletSmallTopAppBar(
-                title = "开源地址",
-                scrollBehavior = topAppBarScrollBehavior,
-                navigationIcon = {
-                    BarIconButton(
-                        icon = MiuixIcons.Glass.Back,
-                        contentDescription = "返回",
-                        onClick = onBack,
-                    )
-                },
-            )
+            BlurredBar(backdrop, blurActive = backdrop != null) {
+                MilletSmallTopAppBar(
+                    title = "开源地址",
+                    scrollBehavior = topAppBarScrollBehavior,
+                    contentScrolledSignal = { repoListState.canScrollBackward },
+                    navigationIcon = {
+                        BarIconButton(
+                            icon = MiuixIcons.Glass.Back,
+                            contentDescription = "返回",
+                            onClick = onBack,
+                        )
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         LazyColumn(
+            state = repoListState,
             modifier = Modifier
                 .fillMaxSize()
                 .scrollEndHaptic()
@@ -849,6 +863,8 @@ fun AboutLicensesScreenMiuix(
 ) {
     val context = LocalContext.current
     val topAppBarScrollBehavior = MiuixScrollBehavior()
+    val licensesListState = rememberLazyListState()
+    val backdrop = rememberBlurBackdrop(LocalEnableBlur.current)
 
     val licenseSections = remember {
         listOf(
@@ -942,20 +958,24 @@ fun AboutLicensesScreenMiuix(
 
     Scaffold(
         topBar = {
-            MilletSmallTopAppBar(
-                title = "开源代码许可",
-                scrollBehavior = topAppBarScrollBehavior,
-                navigationIcon = {
-                    BarIconButton(
-                        icon = MiuixIcons.Glass.Back,
-                        contentDescription = "返回",
-                        onClick = onBack,
-                    )
-                },
-            )
+            BlurredBar(backdrop, blurActive = backdrop != null) {
+                MilletSmallTopAppBar(
+                    title = "开源代码许可",
+                    scrollBehavior = topAppBarScrollBehavior,
+                    contentScrolledSignal = { licensesListState.canScrollBackward },
+                    navigationIcon = {
+                        BarIconButton(
+                            icon = MiuixIcons.Glass.Back,
+                            contentDescription = "返回",
+                            onClick = onBack,
+                        )
+                    },
+                )
+            }
         },
     ) { innerPadding ->
         LazyColumn(
+            state = licensesListState,
             modifier = Modifier
                 .fillMaxSize()
                 .scrollEndHaptic()

@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -175,6 +176,7 @@ fun SettingsContent(
 ) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
+    val pageListState = rememberLazyListState()
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
     val blurActive = backdrop != null
@@ -279,7 +281,8 @@ fun SettingsContent(
                 MilletTopAppBar(
                     color = barColor,
                     title = "设置",
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
+                    contentScrolledSignal = { pageListState.canScrollBackward },
                 )
             }
         },
@@ -288,6 +291,7 @@ fun SettingsContent(
     ) { innerPadding ->
         Box(modifier = if (backdrop != null) Modifier.layerBackdrop(backdrop) else Modifier) {
             LazyColumn(
+                state = pageListState,
                 modifier = Modifier
                     .fillMaxHeight()
                     .scrollEndHaptic()
