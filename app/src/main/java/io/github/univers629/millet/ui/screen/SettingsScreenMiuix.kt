@@ -17,6 +17,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,12 +28,16 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -74,6 +80,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
@@ -110,7 +117,10 @@ import top.yukonga.miuix.kmp.icon.glass.Download
 import top.yukonga.miuix.kmp.icon.glass.Import
 import top.yukonga.miuix.kmp.icon.glass.Reset
 import top.yukonga.miuix.kmp.icon.extended.Reset
+import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.glass.GlassDialog
+import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.theme.LocalDismissState
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -927,33 +937,52 @@ private fun ConfigActionsDialog(
     onExport: () -> Unit,
     onReset: () -> Unit,
 ) {
-    // 与「运行环境与服务」底部面板同一套模糊实现（GlassDialog + 全局弹窗背景采样源）。
-    val glassBackdrop = PopupBackdropHolder.current
-    val maskColor = if (glassBackdrop != null) {
-        colorScheme.background.copy(alpha = 0.72f)
-    } else {
-        colorScheme.background
-    }
+    // 与「运行环境与服务检测」同款底部面板：GlassBottomSheet 采样全局弹窗背景源，
+    // 关闭背景模糊时 PopupBackdropHolder 为 null，面板自动回退为不透明底色。
+    val dismissState = LocalDismissState.current
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
+    val bodyMaxHeight = (screenHeight * 0.66f).coerceIn(280.dp, 580.dp)
+    val scrollState = rememberScrollState()
 
-    GlassDialog(
-        onDismissRequest = onDismissRequest,
+    GlassBottomSheet(backdrop = PopupBackdropHolder.current,
         show = show,
-        backdrop = glassBackdrop,
-        insideMargin = DpSize(0.dp, 0.dp),
-        content = {
-            ProgressiveDialogLayout(
-                title = "配置与备份",
-                maxBodyHeight = 420.dp,
-                headerPadding = PaddingValues(top = 24.dp, bottom = 12.dp),
-                footerPadding = PaddingValues(top = 12.dp, bottom = 24.dp, start = 24.dp, end = 24.dp),
-                surfaceColor = maskColor,
-                footer = {
-                    TextButton(
-                        text = "取消",
-                        onClick = onDismissRequest,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+        title = "配置与备份",
+        insideMargin = DpSize(16.dp, 8.dp),
+        // 与运行环境检测面板一致：progressiveBlur 关闭后顶栏为栈式排布，不再以浅色带覆盖正文
+        progressiveBlur = false,
+        endAction = {
+            IconButton(
+                onClick = {
+                    onDismissRequest()
+                    dismissState?.invoke()
                 },
+            ) {
+                Icon(
+                    imageVector = MiuixIcons.Close,
+                    contentDescription = "关闭",
+                    tint = colorScheme.onBackground,
+                )
+            }
+        },
+        onDismissRequest = {
+            onDismissRequest()
+            dismissState?.invoke()
+        },
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(bottom = 12.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = bodyMaxHeight)
+                    .verticalScroll(scrollState)
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 ConfigActionRow("备份配置", MiuixIcons.Glass.Backup) {
                     onDismissRequest()
@@ -976,8 +1005,25 @@ private fun ConfigActionsDialog(
                     onReset()
                 }
             }
+
+            Spacer(Modifier.height(14.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    text = "取消",
+                    onClick = {
+                        onDismissRequest()
+                        dismissState?.invoke()
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
-    )
+    }
 }
 
 @Composable
@@ -997,7 +1043,8 @@ private fun ConfigActionRow(
             )
         },
         onClick = onClick,
-        insideMargin = PaddingValues(horizontal = 24.dp, vertical = 14.dp),
+        // 面板自身已留 16dp 内边距，行动作卡片直接对齐面板内容宽度，不再额外内缩
+        insideMargin = PaddingValues(horizontal = 0.dp, vertical = 14.dp),
     )
 }
 

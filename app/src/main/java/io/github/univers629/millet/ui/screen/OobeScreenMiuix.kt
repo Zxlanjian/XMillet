@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -599,7 +598,10 @@ fun OobeScreenMiuix(
  * - 底部 70dp 圆形下一步按钮（CircleShape），流光毛玻璃球体 + 纯白右箭头（ic_oobe_arrow），点击后向外扩张并平滑进入权限配置向导；
  * - 竖向布局严格对齐 HyperCeiler 30 : 40 : 20 黄金比例；
  * - 入场动画：图标缩放入场（0.5 -> 1.0）与渐显，标题下落渐显（translationY +60dp -> 0dp），下一步按钮延时 1200ms 弹出。
+ *
+ * 第一页不再提供左上角返回按钮（仅系统返回键生效），isPreview / onBack 仅为对外签名保留。
  */
+@Suppress("UNUSED_PARAMETER")
 @Composable
 private fun OobeStartupContent(
     isPreview: Boolean,
@@ -676,24 +678,6 @@ private fun OobeStartupContent(
         circleYOffset = circleYOffset,
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            if (isPreview) {
-                // 左上角返回按钮与普通页面顶栏导航图标一致：纯图标按钮，不再套圆形液态玻璃底。
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(start = 12.dp, top = 8.dp)
-                        .align(Alignment.TopStart)
-                ) {
-                    Icon(
-                        imageVector = MiuixIcons.Glass.Back,
-                        contentDescription = "返回",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()

@@ -146,8 +146,13 @@ internal fun PolicySubPageScaffold(
     val scrollBehavior = MiuixScrollBehavior()
     val subPageListState = rememberLazyListState()
     val fallbackTabBackdrop = rememberLayerBackdrop()
+    // 这一页内容常不满一屏，列表本身滚不动；此时「正在拖动」是页面唯一能提供的重叠信号，
+    // 与 OOBE 权限页同一套兜底：已滚过顶部 || 正在拖动，静止时仍是纯图标。
+    val contentScrolled = {
+        subPageListState.canScrollBackward || subPageListState.isScrollInProgress
+    }
     val contentUnderTopBar by remember(subPageListState) {
-        derivedStateOf { subPageListState.canScrollBackward }
+        derivedStateOf { contentScrolled() }
     }
     val enableBlur = LocalEnableBlur.current
     val backdrop = rememberBlurBackdrop(enableBlur)
@@ -177,7 +182,7 @@ internal fun PolicySubPageScaffold(
                     },
                     actions = actions,
                     scrollBehavior = scrollBehavior,
-                    contentScrolledSignal = { subPageListState.canScrollBackward },
+                    contentScrolledSignal = contentScrolled,
                     bottomContent = {
                         bottomContent?.invoke(backdrop ?: fallbackTabBackdrop, blurActive && contentUnderTopBar)
                     },
