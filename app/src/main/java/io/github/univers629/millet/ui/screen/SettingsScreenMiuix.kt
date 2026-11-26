@@ -138,6 +138,8 @@ fun SettingsRoute(
     onOpenAppearance: () -> Unit,
     onOpenOobe: () -> Unit,
     onOpenAbout: () -> Unit,
+    /** 系统服务是否已激活；未激活时隐藏「全局策略」整组（策略改不动，显示出来只会误导）。 */
+    isActivated: Boolean = true,
 ) {
     val context = LocalContext.current
     val container = remember(context) { context.appUiContainer }
@@ -167,6 +169,7 @@ fun SettingsRoute(
         onOpenAppearance = onOpenAppearance,
         onOpenOobe = onOpenOobe,
         onOpenAbout = onOpenAbout,
+        isActivated = isActivated,
     )
 }
 
@@ -183,6 +186,8 @@ fun SettingsContent(
     onOpenAppearance: () -> Unit = {},
     onOpenOobe: () -> Unit = {},
     onOpenAbout: () -> Unit,
+    /** 系统服务是否已激活；未激活时隐藏「全局策略」整组。 */
+    isActivated: Boolean = true,
 ) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
@@ -355,154 +360,156 @@ fun SettingsContent(
                         )
                     }
 
-                    SmallTitle(text = "全局策略")
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp)
-                            .padding(bottom = 12.dp)
-                    ) {
-                        FoldablePreferenceSection(
-                            title = "Millet 墓碑冻结全局策略",
-                            summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
-                            icon = MiuixIcons.Glass.NoSunProtectionNeeded,
+                    if (isActivated) {
+                        SmallTitle(text = "全局策略")
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp)
+                                .padding(bottom = 12.dp)
                         ) {
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Battery100,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "禁止息屏与夜间清理后台",
-                            summary = "拦截 PowerCheckerController 与 PowerStateMachine自动杀后台",
-                            checked = disableKill,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_KILL, it) }
-                        )
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Power,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "禁止插电时全量解冻",
-                            summary = "拦截 MilletBrightHandler what=16 与 Greezer 的插电解冻",
-                            checked = disableCharge,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_CHARGE, it) }
-                        )
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.DisplayBrightness,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "亮屏时保持冻结",
-                            summary = "屏幕亮起时，不让系统批量解冻后台应用。此项不控制手机进入深度睡眠",
-                            checked = disableScreenOnThaw,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_SCREEN_ON_THAW, it) }
-                        )
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Prohibit,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "禁止篡改省电白名单",
-                            summary = "拦截电量与性能后台自动增删省电白名单（保留你在系统设置里的手动修改）",
-                            checked = blockPowerSaveWhitelist,
-                            onCheckedChange = {
-                                onSetBooleanPref(PrefsKeys.BLOCK_ADD_POWER_SAVE_WHITELIST_APPS, it)
+                            FoldablePreferenceSection(
+                                title = "Millet 墓碑冻结全局策略",
+                                summary = "已开启 ${listOf(disableKill, disableCharge, disableScreenOnThaw, blockPowerSaveWhitelist, freezeDualApp).count { it }}/5 项",
+                                icon = MiuixIcons.Glass.NoSunProtectionNeeded,
+                            ) {
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.Battery100,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "禁止息屏与夜间清理后台",
+                                summary = "拦截 PowerCheckerController 与 PowerStateMachine自动杀后台",
+                                checked = disableKill,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_KILL, it) }
+                            )
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.Power,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "禁止插电时全量解冻",
+                                summary = "拦截 MilletBrightHandler what=16 与 Greezer 的插电解冻",
+                                checked = disableCharge,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_CHARGE, it) }
+                            )
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.DisplayBrightness,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "亮屏时保持冻结",
+                                summary = "屏幕亮起时，不让系统批量解冻后台应用。此项不控制手机进入深度睡眠",
+                                checked = disableScreenOnThaw,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_SCREEN_ON_THAW, it) }
+                            )
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.Prohibit,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "禁止篡改省电白名单",
+                                summary = "拦截电量与性能后台自动增删省电白名单（保留你在系统设置里的手动修改）",
+                                checked = blockPowerSaveWhitelist,
+                                onCheckedChange = {
+                                    onSetBooleanPref(PrefsKeys.BLOCK_ADD_POWER_SAVE_WHITELIST_APPS, it)
+                                }
+                            )
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.MultiSplitScreen,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "控制双开应用冻结",
+                                summary = "接管双开空间（用户 999）的冻结，应用策略单独设置；原生包名级名单仍可能共享",
+                                checked = freezeDualApp,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.FREEZE_DUAL_APP, it) }
+                            )
                             }
-                        )
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.MultiSplitScreen,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "控制双开应用冻结",
-                            summary = "接管双开空间（用户 999）的冻结，应用策略单独设置；原生包名级名单仍可能共享",
-                            checked = freezeDualApp,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.FREEZE_DUAL_APP, it) }
-                        )
-                        }
-                        FoldablePreferenceSection(
-                            title = "Doze 深度睡眠策略",
-                            summary = "已开启 ${listOf(enableDoze, skipStateCheck, disableMotionListener).count { it }}/3 项",
-                            icon = MiuixIcons.Glass.QuietMode,
-                        ) {
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Timer,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "启用 Doze 省电控制增强",
-                            summary = "息屏且未充电时，约 10 秒后尝试进入深度睡眠。亮屏或充电时，退出本模块开启的强制睡眠",
-                            checked = enableDoze,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.ENABLE_DOZE, it) }
-                        )
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.JumpNext,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "跳过 Doze 中间传感检查",
-                            summary = "当状态进入IDLE_PENDING(2)时直接跃迁至 IDLE_MAINTENANCE(6)",
-                            checked = skipStateCheck,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.SKIP_STATE_CHECK, it) }
-                        )
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.HapticIntensity,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "屏蔽 Doze 移动传感器唤醒",
-                            summary = "DeviceIdleController#motionLocked，移动手机不退出深度睡眠",
-                            checked = disableMotionListener,
-                            onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_MOTION_LISTENER, it) }
-                        )
+                            FoldablePreferenceSection(
+                                title = "Doze 深度睡眠策略",
+                                summary = "已开启 ${listOf(enableDoze, skipStateCheck, disableMotionListener).count { it }}/3 项",
+                                icon = MiuixIcons.Glass.QuietMode,
+                            ) {
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.Timer,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "启用 Doze 省电控制增强",
+                                summary = "息屏且未充电时，约 10 秒后尝试进入深度睡眠。亮屏或充电时，退出本模块开启的强制睡眠",
+                                checked = enableDoze,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.ENABLE_DOZE, it) }
+                            )
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.JumpNext,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "跳过 Doze 中间传感检查",
+                                summary = "当状态进入IDLE_PENDING(2)时直接跃迁至 IDLE_MAINTENANCE(6)",
+                                checked = skipStateCheck,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.SKIP_STATE_CHECK, it) }
+                            )
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.HapticIntensity,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
+                                    )
+                                },
+                                title = "屏蔽 Doze 移动传感器唤醒",
+                                summary = "DeviceIdleController#motionLocked，移动手机不退出深度睡眠",
+                                checked = disableMotionListener,
+                                onCheckedChange = { onSetBooleanPref(PrefsKeys.DISABLE_MOTION_LISTENER, it) }
+                            )
+                            }
                         }
                     }
 

@@ -254,6 +254,8 @@ class MainActivity : ComponentActivity() {
     private fun MainActivityContent(shellVm: MainShellViewModel) {
         val container = remember { appUiContainer }
         val themeState = shellVm.themeState
+        // 激活状态决定底栏 Tab 数量与几处界面的可见性，必须在使用它的 destinations 之前收集。
+        val isActivated by shellVm.activatedFlow.collectAsStateWithLifecycle()
         val navigator = rememberNavigator(Route.Main, LocalCardClickLock.current)
         val navStoreRegistry: NavEntryStoreRegistry = viewModel { NavEntryStoreRegistry() }
         val processListVm: ProcessListViewModel = viewModel {
@@ -268,8 +270,8 @@ class MainActivity : ComponentActivity() {
             shellVm.onRouteChanged(currentRoute == Route.Main)
         }
 
-        val destinations = remember(themeState.showTombStatsTab) {
-            BottomBarDestination.visible(themeState.showTombStatsTab)
+        val destinations = remember(themeState.showTombStatsTab, isActivated) {
+            BottomBarDestination.visible(themeState.showTombStatsTab, isActivated)
         }
         val pagerState = rememberPagerState(initialPage = 0, pageCount = { destinations.size })
         val mainPagerState =
@@ -502,6 +504,7 @@ class MainActivity : ComponentActivity() {
                                                 onOpenAbout = { navigator.push(Route.About) },
                                                 onOpenAppProfile = openProfileByTarget,
                                                 onOpenApps = { navigator.push(Route.Apps) },
+                                                isActivated = isActivated,
                                             )
 
                                             BottomBarDestination.Processes -> ProcessListRoute(
@@ -527,6 +530,7 @@ class MainActivity : ComponentActivity() {
                                                 onOpenAppearance = { navigator.push(Route.Appearance) },
                                                 onOpenOobe = { navigator.push(Route.Oobe) },
                                                 onOpenAbout = { navigator.push(Route.About) },
+                                                isActivated = isActivated,
                                             )
 
                                             null -> Unit
@@ -559,7 +563,8 @@ class MainActivity : ComponentActivity() {
                             entry<Route.Appearance>(swipeDismiss = swipeDismiss) {
                                 ThemeSettingsScreenMiuix(
                                     themeState = themeState,
-                                    onBack = { navigator.pop() }
+                                    onBack = { navigator.pop() },
+                                    isActivated = isActivated,
                                 )
                             }
 

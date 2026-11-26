@@ -109,6 +109,8 @@ import top.yukonga.miuix.kmp.utils.scrollEndHaptic
 fun ThemeSettingsScreenMiuix(
     themeState: UiThemeState,
     onBack: () -> Unit,
+    /** 系统服务是否已激活；未激活时隐藏「墓碑统计」开关及其显示板块（底栏也没有该页）。 */
+    isActivated: Boolean = true,
 ) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
@@ -240,35 +242,37 @@ fun ThemeSettingsScreenMiuix(
                             backdrop = backdrop,
                         )
 
-                        SwitchPreference(
-                            startAction = {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.DigitalStatistics,
-                                    contentDescription = null,
-                                    modifier = Modifier
-                                        .padding(end = 8.dp)
-                                        .size(24.dp),
-                                    tint = colorScheme.onBackground
-                                )
-                            },
-                            title = "墓碑统计",
-                            summary = "在底栏显示墓碑统计页：冻结、唤醒与拦截次数",
-                            checked = themeState.showTombStatsTab,
-                            onCheckedChange = { themeState.updateShowTombStatsTab(it) }
-                        )
-
-                        if (themeState.showTombStatsTab) {
-                            FoldablePreferenceSection(
-                                title = "墓碑统计显示板块",
-                                summary = "已显示 ${themeState.tombSections.size}/${TombSection.entries.size} 个板块",
-                                icon = MiuixIcons.Glass.ListView,
-                            ) {
-                                TombSection.entries.forEach { section ->
-                                    SwitchPreference(
-                                        title = section.label,
-                                        checked = section.id in themeState.tombSections,
-                                        onCheckedChange = { themeState.updateTombSection(section.id, it) },
+                        if (isActivated) {
+                            SwitchPreference(
+                                startAction = {
+                                    Icon(
+                                        imageVector = MiuixIcons.Glass.DigitalStatistics,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .padding(end = 8.dp)
+                                            .size(24.dp),
+                                        tint = colorScheme.onBackground
                                     )
+                                },
+                                title = "墓碑统计",
+                                summary = "在底栏显示墓碑统计页：冻结、唤醒与拦截次数",
+                                checked = themeState.showTombStatsTab,
+                                onCheckedChange = { themeState.updateShowTombStatsTab(it) }
+                            )
+
+                            if (themeState.showTombStatsTab) {
+                                FoldablePreferenceSection(
+                                    title = "墓碑统计显示板块",
+                                    summary = "已显示 ${themeState.tombSections.size}/${TombSection.entries.size} 个板块",
+                                    icon = MiuixIcons.Glass.ListView,
+                                ) {
+                                    TombSection.entries.forEach { section ->
+                                        SwitchPreference(
+                                            title = section.label,
+                                            checked = section.id in themeState.tombSections,
+                                            onCheckedChange = { themeState.updateTombSection(section.id, it) },
+                                        )
+                                    }
                                 }
                             }
                         }
