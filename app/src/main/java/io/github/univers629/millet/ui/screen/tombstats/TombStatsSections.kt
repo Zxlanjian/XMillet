@@ -776,8 +776,11 @@ private fun TimeDistributionSection(
     var selected by remember(window) { mutableIntStateOf(-1) }
     val onColor = colorScheme.primary
     val offColor = screenOffAccentColor()
-    val maxTotal = buckets.maxOfOrNull { it.total } ?: 0
-    val peakIndex = if (maxTotal > 0) buckets.indices.maxByOrNull { buckets[it].total } ?: -1 else -1
+    // 峰值与峰值下标只跟分桶数据有关，缓存起来避免每次重组都重算一遍。
+    val maxTotal = remember(buckets) { buckets.maxOfOrNull { it.total } ?: 0 }
+    val peakIndex = remember(buckets, maxTotal) {
+        if (maxTotal > 0) buckets.indices.maxByOrNull { buckets[it].total } ?: -1 else -1
+    }
     val showIndex = if (selected in buckets.indices) selected else peakIndex
 
     Column(Modifier.fillMaxWidth()) {
@@ -996,6 +999,13 @@ private fun AppRankSection(
         sorted.maxOfOrNull { rankValue(it, mode) }?.coerceAtLeast(1f) ?: 1f
     }
     val shown = if (expanded || activeQuery.isNotBlank()) filtered else filtered.take(10)
+    // 排行进度条整段只播一次生长动画：700ms 后新进入组合的行直接显示满值，
+    // 避免滚动时每行都重播 550ms 补间。
+    var animateBars by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(700)
+        animateBars = false
+    }
 
     Column {
         Row(
@@ -1085,6 +1095,7 @@ private fun AppRankSection(
                     app = app,
                     mode = mode,
                     fraction = rankValue(app, mode) / maxValue,
+                    animateOnEnter = animateBars,
                     onClick = { onOpenDetail(app) },
                 )
             }
@@ -1265,6 +1276,7 @@ private fun RankRow(
     app: AppFreezeStats,
     mode: RankMode,
     fraction: Float,
+    animateOnEnter: Boolean,
     onClick: () -> Unit,
 ) {
     val barFraction = fraction.coerceIn(0.03f, 1f)
@@ -1340,13 +1352,17 @@ private fun RankRow(
             }
             Spacer(Modifier.height(5.dp))
             if (mode == RankMode.WAKE) {
-                val segs = app.wakeByCategory.entries
-                    .filter { it.key.isBackground && it.value > 0 }
-                    .sortedByDescending { it.value }
-                    .map { it.key.displayColor() to it.value.toFloat() }
+                // 过滤与排序只跟 app 有关，缓存下来；配色依赖主题色（@Composable），只能每次现算。
+                val wakeEntries = remember(app) {
+                    app.wakeByCategory.entries
+                        .filter { it.key.isBackground && it.value > 0 }
+                        .sortedByDescending { it.value }
+                }
+                val segs = wakeEntries.map { it.key.displayColor() to it.value.toFloat() }
                 SegmentedBar(
                     segments = segs,
                     fillFraction = barFraction,
+                    animateOnEnter = animateOnEnter,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp),
