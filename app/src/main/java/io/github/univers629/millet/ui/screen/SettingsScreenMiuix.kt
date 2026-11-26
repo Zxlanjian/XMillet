@@ -948,7 +948,8 @@ private fun ConfigActionsDialog(
     GlassBottomSheet(backdrop = PopupBackdropHolder.current,
         show = show,
         title = "配置与备份",
-        insideMargin = DpSize(16.dp, 8.dp),
+        // 20dp：标题、右上关闭按钮与整段行内容都跟着向内收，不再贴屏幕边缘。
+        insideMargin = DpSize(20.dp, 8.dp),
         // 与运行环境检测面板一致：progressiveBlur 关闭后顶栏为栈式排布，不再以浅色带覆盖正文
         progressiveBlur = false,
         endAction = {
@@ -1043,8 +1044,8 @@ private fun ConfigActionRow(
             )
         },
         onClick = onClick,
-        // 面板自身已留 16dp 内边距，行动作卡片直接对齐面板内容宽度，不再额外内缩
-        insideMargin = PaddingValues(horizontal = 0.dp, vertical = 14.dp),
+        // 面板自身已留 20dp 内边距，行再固定 8dp：图标 / 标题 / 右侧箭头合计距屏幕边约 28dp。
+        insideMargin = PaddingValues(horizontal = 8.dp, vertical = 14.dp),
     )
 }
 
