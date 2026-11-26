@@ -47,7 +47,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -100,6 +99,7 @@ import io.github.univers629.millet.ui.util.PopupBackdropHolder
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
@@ -604,25 +604,18 @@ private fun DozeAttributionCard(
             }
 
             if (summary.recentSessions.isNotEmpty()) {
-                // 展开 / 收起只靠 chevron 旋转表达状态，箭头与文字整体居中，不再占满左右两端。
+                // 与排行「查看全部 n 个应用」行同一套样式：不要底色、不要按压层，
+                // 只有居中的标题色文字 + 灰色 chevron，展开态靠 chevron 旋转表达。
                 val sessionArrowRotation by animateFloatAsState(
                     targetValue = if (showSessions) 90f else 0f,
                     animationSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMediumLow),
                     label = "dozeSessionArrow",
                 )
-                val sessionRowInteraction = remember { MutableInteractionSource() }
-                // 整行做成一块可点击的灰底：按压指示与背景铺满整行，不再只罩住文字附近。
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(colorScheme.surfaceContainerHighest)
-                        .clickable(
-                            interactionSource = sessionRowInteraction,
-                            indication = ripple(),
-                            role = Role.Button,
-                        ) { showSessions = !showSessions }
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .clickable(role = Role.Button) { showSessions = !showSessions }
+                        .padding(vertical = 12.dp),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -691,34 +684,41 @@ private fun DozeAttributionCard(
 private fun WakeReasonSection(wake: Map<WakeCategory, Int>) {
     val total = wake.values.sum()
     val safeTotal = total.coerceAtLeast(1)
-    val bgCount = wake.entries.sumOf { if (it.key.isBackground) it.value else 0 }
+    val bgCount = remember(wake) { wake.entries.sumOf { if (it.key.isBackground) it.value else 0 } }
     val userCount = wake[WakeCategory.USER_OPEN] ?: 0
-    val ordered = wake.entries.filter { it.value > 0 }.sortedByDescending { it.value }
+    // 排序只跟入参有关，缓存下来避免每次重组都重排。
+    val ordered = remember(wake) { wake.entries.filter { it.value > 0 }.sortedByDescending { it.value } }
+    // displayColor() 是 @Composable，不能塞进 remember 里，只能每次重组现算。
     val segments = ordered.map { it.key.displayColor() to it.value.toFloat() }
+    // 进度条整段只播一次生长动画：700ms 后新进入组合的行直接显示满值，
+    // 否则滚动中每行都重播 550ms 补间，叠加起来就是下滑掉帧。
+    var animateBars by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        delay(700)
+        animateBars = false
+    }
 
     Column(Modifier.fillMaxWidth()) {
         if (total > 0) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+            // 两行排布：摘要与「解冻记录」不再各占一半争宽，16sp 也不会折行。
+            Column(Modifier.fillMaxWidth()) {
                 Text(
                     text = "解冻记录 ${formatCount(total)} 次",
                     style = rememberStatsHeadlineStyle(),
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "后台活动 ${formatCount(bgCount)} 前台活动 ${formatCount(userCount)}",
-                    style = rememberStatsHeadlineStyle(),
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f),
+                    text = "后台活动 ${formatCount(bgCount)} · 前台活动 ${formatCount(userCount)}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurfaceVariantSummary,
                 )
             }
             Spacer(Modifier.height(10.dp))
         }
         SegmentedBar(
             segments = segments,
+            animateOnEnter = animateBars,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(14.dp),
@@ -742,7 +742,9 @@ private fun WakeReasonSection(wake: Map<WakeCategory, Int>) {
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = cat.label,
-                    style = rememberStatsHeadlineStyle(),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
                 Text(
@@ -1964,10 +1966,22 @@ private fun SegmentedBar(
     segments: List<Pair<Color, Float>>,
     modifier: Modifier = Modifier,
     fillFraction: Float = 1f,
+    animateOnEnter: Boolean = true,
 ) {
     val track = colorScheme.surfaceContainerHighest
-    val progress = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { progress.animateTo(1f, tween(550)) }
+    // 生长动画只给「首次进入组合」用：调用方在整段动画结束后把 animateOnEnter 置 false，
+    // 之后滚动中新进入组合的行直接以满值绘制，不再各自重播 550ms 补间。
+    val progress = remember { Animatable(if (animateOnEnter) 0f else 1f) }
+    LaunchedEffect(animateOnEnter) {
+        if (progress.value < 1f) {
+            if (animateOnEnter) {
+                progress.animateTo(1f, tween(550))
+            } else {
+                // 动画途中被要求停止时快速收尾，避免整条进度条硬跳。
+                progress.animateTo(1f, tween(80))
+            }
+        }
+    }
     val clampedFill = fillFraction.coerceIn(0f, 1f)
 
     Canvas(modifier = modifier.clip(RoundedCornerShape(50))) {
